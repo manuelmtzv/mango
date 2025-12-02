@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mangocatnotes_postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./server/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mangocatnotes_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mangocatnotes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mangocatnotes_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mangocatnotes_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:6.0
+    container_name: mangocatnotes_mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: mangocatnotes
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mangocatnotes_network
+    profiles:
+      - migration
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  mongo_data:
+
+networks:
+  mangocatnotes_network:
+    driver: bridge

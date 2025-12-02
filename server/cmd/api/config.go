@@ -6,8 +6,10 @@ import (
 
 type Config struct {
 	Port            string
-	DatabaseURL     string
-	DBName          string
+	DBAddr          string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	MaxIdleTime     string
 	JWTSecret       string
 	DefaultTagLimit int64
 }
@@ -17,9 +19,11 @@ func LoadConfig() Config {
 
 	return Config{
 		Port:            env.GetString("PORT", "3000"),
-		DatabaseURL:     env.GetString("DATABASE_URL", "mongodb://localhost:27017"),
-		DBName:          env.GetString("DB_NAME", "mangocatnotes"),
-		JWTSecret:       env.GetString("JWT_SECRET", "supersecret"),
+		DBAddr:          env.GetRequired("DB_ADDR"),
+		MaxOpenConns:    env.GetInt("DB_MAX_OPEN_CONNS", 30),
+		MaxIdleConns:    env.GetInt("DB_MAX_IDLE_CONNS", 30),
+		MaxIdleTime:     env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		JWTSecret:       env.GetRequired("JWT_SECRET"),
 		DefaultTagLimit: env.GetInt64("DEFAULT_TAG_LIMIT", 100),
 	}
 }

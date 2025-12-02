@@ -6,38 +6,49 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DB struct {
-	Client *mongo.Client
-	DB     *mongo.Database
+	Pool *pgxpool.Pool
 }
 
-func New(uri, dbName string) (*DB, error) {
+func New(addr string, maxOpenConns, maxIdleConns int, maxIdleTime string) (*DB, error) {
+	config, err := pgxpool.ParseConfig(addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	config.MaxConns = int32(maxOpenConns)
+	config.MinConns = int32(maxIdleConns)
+
+	duration, err := time.ParseDuration(maxIdleTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse max idle time: %w", err)
+	}
+	config.MaxConnIdleTime = duration
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().ApplyURI(uri)
-	client, err := mongo.Connect(ctx, clientOptions)
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to mongo: %w", err)
+		return nil, fmt.Errorf("failed to connect to postgres: %w", err)
 	}
 
-	if err := client.Ping(ctx, nil); err != nil {
-		return nil, fmt.Errorf("failed to ping mongo: %w", err)
+	if err := pool.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping postgres: %w", err)
 	}
 
-	log.Println("Connected to MongoDB")
+	log.Println("Connected to PostgreSQL")
 	return &DB{
-		Client: client,
-		DB:     client.Database(dbName),
+		Pool: pool,
 	}, nil
 }
 
 func (d *DB) Close() {
-	if err := d.Client.Disconnect(context.Background()); err != nil {
-		log.Printf("Error closing mongo connection: %v", err)
+	if d.Pool != nil {
+		d.Pool.Close()
+		log.Println("PostgreSQL connection closed")
 	}
 }

@@ -48,7 +48,7 @@ async function afterDelete() {
 
     <NoteEditForm :note="note" @refetch-note="refetch">
       <template #after-form>
-        <NoteTags :tags="note.tags">
+        <NoteTags :tags="note.tags || []">
           <template #header>
             <div class="flex gap-4 justify-between items-center">
               <h3 class="font-semibold">Tags:</h3>

@@ -16,14 +16,14 @@ const props = defineProps<IProps>();
 
 const deletingNote = ref<boolean>(false);
 const showDeleteButton = ref<boolean>(false);
-const tags = ref<ITag[]>(props.note.tags);
+const tags = ref<ITag[]>(props.note.tags || []);
 
 const renderTags = computed(() =>
   tags.value.slice(0, noteDefaults.NOTE_ENTRY_MAX_TAGS),
 );
 
 const isOverflow = computed(
-  () => props.note.tags.length > noteDefaults.NOTE_ENTRY_MAX_TAGS,
+  () => tags.value.length > noteDefaults.NOTE_ENTRY_MAX_TAGS,
 );
 </script>
 
@@ -54,8 +54,8 @@ const isOverflow = computed(
           :color="tag.color"
         />
 
-        <span v-if="isOverflow" class="text-xs text-gray-500">
-          +{{ props.note.tags.length - noteDefaults.NOTE_ENTRY_MAX_TAGS }}
+        <span v-if="isOverflow " class="text-xs text-gray-500">
+          +{{ tags.length - noteDefaults.NOTE_ENTRY_MAX_TAGS }}
         </span>
       </ListTransitionWrapper>
     </template>

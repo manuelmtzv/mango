@@ -7,5 +7,5 @@ export interface INote {
   createdAt: string;
   updatedAt: string;
   tagIDs?: string[];
-  tags: ITag[];
+  tags?: ITag[];
 }

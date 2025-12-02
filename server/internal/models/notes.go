@@ -3,20 +3,19 @@ package models
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 type Note struct {
-	ID        primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
-	UserID    primitive.ObjectID   `bson:"userId" json:"userId"`
-	Title     string               `bson:"title" json:"title"`
-	Content   string               `bson:"content" json:"content"`
-	Archived  bool                 `bson:"archived" json:"archived"`
-	TagIDs    []primitive.ObjectID `bson:"tagIDs" json:"tagIDs"`
-	CreatedAt time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time            `bson:"updatedAt" json:"updatedAt"`
+	ID        uuid.UUID `db:"id" json:"id"`
+	UserID    uuid.UUID `db:"user_id" json:"userId"`
+	Title     string    `db:"title" json:"title"`
+	Content   string    `db:"content" json:"content"`
+	Archived  bool      `db:"archived" json:"archived"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
 
-	Tags []Tag `bson:"-" json:"tags"`
+	Tags []Tag `db:"-" json:"tags"`
 }
 
 type PaginatedNotesResponse struct {

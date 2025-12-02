@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 func (app *application) routes() http.Handler {
@@ -33,7 +33,7 @@ func (app *application) routes() http.Handler {
 		r.Post("/login", app.login)
 		r.With(app.AuthMiddleware).Get("/validate-token", func(w http.ResponseWriter, r *http.Request) {
 			token := GetJwt(r)
-			userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+			userID := r.Context().Value(UserIDKey).(uuid.UUID)
 			user, err := app.store.Users.GetByID(r.Context(), userID)
 			if err != nil {
 				app.errorJSON(w, err, http.StatusInternalServerError)

@@ -1,6 +1,6 @@
 package store
 
-import "go.mongodb.org/mongo-driver/mongo"
+import "github.com/jackc/pgx/v5/pgxpool"
 
 type Storage struct {
 	Users UserStorage
@@ -8,10 +8,10 @@ type Storage struct {
 	Tags  TagStorage
 }
 
-func NewStorage(db *mongo.Database) *Storage {
+func NewStorage(pool *pgxpool.Pool) *Storage {
 	return &Storage{
-		Users: NewUserStore(db),
-		Notes: NewNoteStore(db),
-		Tags:  NewTagStore(db),
+		Users: NewUserStore(pool),
+		Notes: NewNoteStore(pool),
+		Tags:  NewTagStore(pool),
 	}
 }

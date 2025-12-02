@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 func (app *application) register(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +47,7 @@ func (app *application) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := GenerateToken(user.ID.Hex(), app.config.JWTSecret)
+	token, err := GenerateToken(user.ID.String(), app.config.JWTSecret)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -95,7 +95,7 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := GenerateToken(user.ID.Hex(), app.config.JWTSecret)
+	token, err := GenerateToken(user.ID.String(), app.config.JWTSecret)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -108,7 +108,7 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) getMe(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	user, err := app.store.Users.GetByID(r.Context(), userID)
 	if err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
@@ -119,7 +119,7 @@ func (app *application) getMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) createNote(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	var input models.Note
 	if err := app.readJSON(w, r, &input); err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
@@ -143,7 +143,7 @@ func (app *application) createNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) getNotes(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
 	if page < 1 {
 		page = 1
@@ -188,7 +188,7 @@ func (app *application) getNotes(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) getNote(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -216,7 +216,7 @@ func (app *application) getNote(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) updateNote(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -246,7 +246,7 @@ func (app *application) updateNote(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) deleteNote(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -261,7 +261,7 @@ func (app *application) deleteNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) createTag(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	var input models.Tag
 	if err := app.readJSON(w, r, &input); err != nil {
 		app.errorJSON(w, err, http.StatusBadRequest)
@@ -291,7 +291,7 @@ func (app *application) createTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) getTags(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 
 	tags, count, err := app.store.Tags.GetAll(r.Context(), userID, 1, 1000) // Legacy fetches all, setting high limit
 	if err != nil {
@@ -311,7 +311,7 @@ func (app *application) getTags(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) getTag(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -332,7 +332,7 @@ func (app *application) getTag(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) updateTag(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -355,7 +355,7 @@ func (app *application) updateTag(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) deleteTag(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := primitive.ObjectIDFromHex(idParam)
+	id, err := uuid.Parse(idParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
 		return
@@ -370,7 +370,7 @@ func (app *application) deleteTag(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) findTagsOrCreate(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(UserIDKey).(primitive.ObjectID)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	var input struct {
 		Tags []string `json:"tags"`
 	}
@@ -393,7 +393,7 @@ func (app *application) findTagsOrCreate(w http.ResponseWriter, r *http.Request)
 
 func (app *application) getNoteTags(w http.ResponseWriter, r *http.Request) {
 	noteIDParam := chi.URLParam(r, "id")
-	noteID, err := primitive.ObjectIDFromHex(noteIDParam)
+	noteID, err := uuid.Parse(noteIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
 		return
@@ -410,7 +410,7 @@ func (app *application) getNoteTags(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) attachNoteTags(w http.ResponseWriter, r *http.Request) {
 	noteIDParam := chi.URLParam(r, "id")
-	noteID, err := primitive.ObjectIDFromHex(noteIDParam)
+	noteID, err := uuid.Parse(noteIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
 		return
@@ -424,9 +424,9 @@ func (app *application) attachNoteTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newTagIDs []primitive.ObjectID
+	var newTagIDs []uuid.UUID
 	for _, idStr := range input.Tags {
-		id, err := primitive.ObjectIDFromHex(idStr)
+		id, err := uuid.Parse(idStr)
 		if err != nil {
 			app.errorJSON(w, errors.New("invalid tag id in list"), http.StatusBadRequest)
 			return
@@ -481,20 +481,20 @@ func (app *application) attachNoteTags(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) attachNoteTag(w http.ResponseWriter, r *http.Request) {
 	noteIDParam := chi.URLParam(r, "id")
-	noteID, err := primitive.ObjectIDFromHex(noteIDParam)
+	noteID, err := uuid.Parse(noteIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
 		return
 	}
 
 	tagIDParam := chi.URLParam(r, "tagId")
-	tagID, err := primitive.ObjectIDFromHex(tagIDParam)
+	tagID, err := uuid.Parse(tagIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid tag id"), http.StatusBadRequest)
 		return
 	}
 
-	if err := app.store.Notes.AttachTags(r.Context(), noteID, []primitive.ObjectID{tagID}); err != nil {
+	if err := app.store.Notes.AttachTags(r.Context(), noteID, []uuid.UUID{tagID}); err != nil {
 		app.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -517,14 +517,14 @@ func (app *application) attachNoteTag(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) detachNoteTag(w http.ResponseWriter, r *http.Request) {
 	noteIDParam := chi.URLParam(r, "id")
-	noteID, err := primitive.ObjectIDFromHex(noteIDParam)
+	noteID, err := uuid.Parse(noteIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
 		return
 	}
 
 	tagIDParam := chi.URLParam(r, "tagId")
-	tagID, err := primitive.ObjectIDFromHex(tagIDParam)
+	tagID, err := uuid.Parse(tagIDParam)
 	if err != nil {
 		app.errorJSON(w, errors.New("invalid tag id"), http.StatusBadRequest)
 		return

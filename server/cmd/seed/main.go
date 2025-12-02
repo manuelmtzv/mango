@@ -13,16 +13,18 @@ import (
 func main() {
 	env.Load()
 
-	databaseURL := env.GetString("DATABASE_URL", "mongodb://localhost:27017")
-	dbName := env.GetString("DB_NAME", "mangocatnotes")
+	addr := env.GetRequired("DB_ADDR")
+	maxOpenConns := env.GetInt("DB_MAX_OPEN_CONNS", 30)
+	maxIdleConns := env.GetInt("DB_MAX_IDLE_CONNS", 30)
+	maxIdleTime := env.GetString("DB_MAX_IDLE_TIME", "15m")
 
-	database, err := db.New(databaseURL, dbName)
+	database, err := db.New(addr, maxOpenConns, maxIdleConns, maxIdleTime)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer database.Close()
 
-	storage := store.NewStorage(database.DB)
+	storage := store.NewStorage(database.Pool)
 	seeder := seed.NewSeeder(storage)
 
 	ctx := context.Background()

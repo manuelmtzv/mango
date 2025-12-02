@@ -3,230 +3,261 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoNoteStore struct {
-	coll     *mongo.Collection
-	tagsColl *mongo.Collection
+type PostgresNoteStore struct {
+	pool *pgxpool.Pool
 }
 
-func NewNoteStore(db *mongo.Database) *MongoNoteStore {
-	return &MongoNoteStore{
-		coll:     db.Collection("notes"),
-		tagsColl: db.Collection("tags"),
+func NewNoteStore(pool *pgxpool.Pool) *PostgresNoteStore {
+	return &PostgresNoteStore{
+		pool: pool,
 	}
 }
 
-func (s *MongoNoteStore) Create(ctx context.Context, note *models.Note) error {
-	note.CreatedAt = time.Now()
-	note.UpdatedAt = time.Now()
-	if note.TagIDs == nil {
-		note.TagIDs = []primitive.ObjectID{}
+func (s *PostgresNoteStore) Create(ctx context.Context, note *models.Note) error {
+	query := `
+		INSERT INTO notes (user_id, title, content, archived, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`
+	now := time.Now()
+	note.CreatedAt = now
+	note.UpdatedAt = now
+
+	err := s.pool.QueryRow(ctx, query,
+		note.UserID,
+		note.Title,
+		note.Content,
+		note.Archived,
+		note.CreatedAt,
+		note.UpdatedAt,
+	).Scan(&note.ID)
+
+	return err
+}
+
+func (s *PostgresNoteStore) AttachTags(ctx context.Context, noteID uuid.UUID, tagIDs []uuid.UUID) error {
+	if len(tagIDs) == 0 {
+		return nil
 	}
-	res, err := s.coll.InsertOne(ctx, note)
+
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	note.ID = res.InsertedID.(primitive.ObjectID)
+	defer tx.Rollback(ctx)
 
-	if len(note.TagIDs) > 0 {
-		_, err := s.tagsColl.UpdateMany(ctx,
-			bson.M{"_id": bson.M{"$in": note.TagIDs}},
-			bson.M{"$addToSet": bson.M{"noteIDs": note.ID}},
-		)
+	for _, tagID := range tagIDs {
+		query := `
+			INSERT INTO note_tags (note_id, tag_id, created_at)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (note_id, tag_id) DO NOTHING
+		`
+		_, err := tx.Exec(ctx, query, noteID, tagID, time.Now())
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
-}
-
-func (s *MongoNoteStore) AttachTags(ctx context.Context, noteID primitive.ObjectID, tagIDs []primitive.ObjectID) error {
-	update := bson.M{
-		"$addToSet": bson.M{
-			"tagIDs": bson.M{
-				"$each": tagIDs,
-			},
-		},
-		"$set": bson.M{
-			"updatedAt": time.Now(),
-		},
-	}
-	_, err := s.coll.UpdateOne(ctx, bson.M{"_id": noteID}, update)
+	query := `UPDATE notes SET updated_at = $1 WHERE id = $2`
+	_, err = tx.Exec(ctx, query, time.Now(), noteID)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.tagsColl.UpdateMany(ctx,
-		bson.M{"_id": bson.M{"$in": tagIDs}},
-		bson.M{"$addToSet": bson.M{"noteIDs": noteID}},
-	)
-	return err
+	return tx.Commit(ctx)
 }
 
-func (s *MongoNoteStore) DetachTag(ctx context.Context, noteID primitive.ObjectID, tagID primitive.ObjectID) error {
-	update := bson.M{
-		"$pull": bson.M{
-			"tagIDs": tagID,
-		},
-		"$set": bson.M{
-			"updatedAt": time.Now(),
-		},
+func (s *PostgresNoteStore) DetachTag(ctx context.Context, noteID uuid.UUID, tagID uuid.UUID) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
 	}
-	_, err := s.coll.UpdateOne(ctx, bson.M{"_id": noteID}, update)
+	defer tx.Rollback(ctx)
+
+	query := `DELETE FROM note_tags WHERE note_id = $1 AND tag_id = $2`
+	_, err = tx.Exec(ctx, query, noteID, tagID)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.tagsColl.UpdateOne(ctx,
-		bson.M{"_id": tagID},
-		bson.M{"$pull": bson.M{"noteIDs": noteID}},
-	)
-	return err
+	updateQuery := `UPDATE notes SET updated_at = $1 WHERE id = $2`
+	_, err = tx.Exec(ctx, updateQuery, time.Now(), noteID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
-func (s *MongoNoteStore) GetByID(ctx context.Context, id primitive.ObjectID) (*models.Note, error) {
+func (s *PostgresNoteStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Note, error) {
+	query := `
+		SELECT id, user_id, title, content, archived, created_at, updated_at
+		FROM notes
+		WHERE id = $1
+	`
 	var note models.Note
-	err := s.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&note)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
+	err := s.pool.QueryRow(ctx, query, id).Scan(
+		&note.ID,
+		&note.UserID,
+		&note.Title,
+		&note.Content,
+		&note.Archived,
+		&note.CreatedAt,
+		&note.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
 	}
-	if note.TagIDs == nil {
-		note.TagIDs = []primitive.ObjectID{}
+	if err != nil {
+		return nil, err
 	}
 	return &note, nil
 }
 
-func (s *MongoNoteStore) GetAll(ctx context.Context, userID primitive.ObjectID, page, limit int64, search string, tags []string) ([]models.Note, int64, error) {
-	skip := ((page - 1) * limit)
-	l := (limit)
-	opts := options.FindOptions{
-		Skip:  &skip,
-		Limit: &l,
-		Sort:  bson.M{"updatedAt": -1},
-	}
+func (s *PostgresNoteStore) GetAll(ctx context.Context, userID uuid.UUID, page, limit int64, search string, tags []string) ([]models.Note, int64, error) {
+	offset := (page - 1) * limit
 
-	filter := bson.M{"userId": userID}
+	baseQuery := `
+		FROM notes n
+		WHERE n.user_id = $1
+	`
+	args := []interface{}{userID}
+	argCount := 1
 
 	if search != "" {
-		filter["title"] = bson.M{"$regex": search, "$options": "i"}
+		argCount++
+		baseQuery += fmt.Sprintf(" AND n.title ILIKE $%d", argCount)
+		args = append(args, "%"+search+"%")
 	}
 
 	if len(tags) > 0 {
-		var tagDocs []models.Tag
-		tagCursor, err := s.tagsColl.Find(ctx, bson.M{
-			"userId": userID,
-			"name":   bson.M{"$in": tags},
-		})
+		argCount++
+		baseQuery += fmt.Sprintf(`
+			AND EXISTS (
+				SELECT 1 FROM note_tags nt
+				JOIN tags t ON t.id = nt.tag_id
+				WHERE nt.note_id = n.id
+				AND t.name = ANY($%d)
+				AND t.user_id = $1
+			)
+		`, argCount)
+		args = append(args, tags)
+	}
+
+	countQuery := "SELECT COUNT(*) " + baseQuery
+	var total int64
+	err := s.pool.QueryRow(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	dataQuery := `
+		SELECT n.id, n.user_id, n.title, n.content, n.archived, n.created_at, n.updated_at
+	` + baseQuery + `
+		ORDER BY n.updated_at DESC
+		LIMIT $` + fmt.Sprintf("%d", argCount+1) + ` OFFSET $` + fmt.Sprintf("%d", argCount+2)
+
+	args = append(args, limit, offset)
+
+	rows, err := s.pool.Query(ctx, dataQuery, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		err := rows.Scan(
+			&note.ID,
+			&note.UserID,
+			&note.Title,
+			&note.Content,
+			&note.Archived,
+			&note.CreatedAt,
+			&note.UpdatedAt,
+		)
 		if err != nil {
 			return nil, 0, err
 		}
-		if err = tagCursor.All(ctx, &tagDocs); err != nil {
-			return nil, 0, err
-		}
-		tagCursor.Close(ctx)
-
-		if len(tagDocs) > 0 {
-			tagIDs := make([]primitive.ObjectID, len(tagDocs))
-			for i, tag := range tagDocs {
-				tagIDs[i] = tag.ID
-			}
-			filter["tagIDs"] = bson.M{"$in": tagIDs}
-		} else {
-			return []models.Note{}, 0, nil
-		}
+		notes = append(notes, note)
 	}
 
-	cursor, err := s.coll.Find(ctx, filter, &opts)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer cursor.Close(ctx)
-
-	var notes []models.Note
-	if err = cursor.All(ctx, &notes); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, 0, err
 	}
 
-	count, err := s.coll.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	for i := range notes {
-		if notes[i].TagIDs == nil {
-			notes[i].TagIDs = []primitive.ObjectID{}
-		}
-	}
-
-	return notes, count, nil
+	return notes, total, nil
 }
 
-func (s *MongoNoteStore) Update(ctx context.Context, note *models.Note) error {
+func (s *PostgresNoteStore) Update(ctx context.Context, note *models.Note) error {
 	note.UpdatedAt = time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"title":     note.Title,
-			"content":   note.Content,
-			"archived":  note.Archived,
-			"tagIDs":    note.TagIDs,
-			"updatedAt": note.UpdatedAt,
-		},
-	}
-	_, err := s.coll.UpdateOne(ctx, bson.M{"_id": note.ID}, update)
+	query := `
+		UPDATE notes
+		SET title = $1, content = $2, archived = $3, updated_at = $4
+		WHERE id = $5
+	`
+	_, err := s.pool.Exec(ctx, query,
+		note.Title,
+		note.Content,
+		note.Archived,
+		note.UpdatedAt,
+		note.ID,
+	)
 	return err
 }
 
-func (s *MongoNoteStore) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": id})
+func (s *PostgresNoteStore) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM notes WHERE id = $1`
+	_, err := s.pool.Exec(ctx, query, id)
 	return err
 }
 
-func (s *MongoNoteStore) GetTags(ctx context.Context, noteID primitive.ObjectID) ([]models.Tag, error) {
+func (s *PostgresNoteStore) GetTags(ctx context.Context, noteID uuid.UUID) ([]models.Tag, error) {
+	query := `
+		SELECT t.id, t.user_id, t.name, t.color, t.created_at, t.updated_at
+		FROM tags t
+		INNER JOIN note_tags nt ON t.id = nt.tag_id
+		WHERE nt.note_id = $1
+		ORDER BY t.name
+	`
 
-	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.M{"_id": noteID}}},
-		{{Key: "$lookup", Value: bson.M{
-			"from":         "tags",
-			"localField":   "tagIDs",
-			"foreignField": "_id",
-			"as":           "tags",
-		}}},
-		{{Key: "$project", Value: bson.M{"tags": 1, "_id": 0}}},
-	}
-
-	cursor, err := s.coll.Aggregate(ctx, pipeline)
+	rows, err := s.pool.Query(ctx, query, noteID)
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
-	var result []struct {
-		Tags []models.Tag `bson:"tags"`
+	var tags []models.Tag
+	for rows.Next() {
+		var tag models.Tag
+		err := rows.Scan(
+			&tag.ID,
+			&tag.UserID,
+			&tag.Name,
+			&tag.Color,
+			&tag.CreatedAt,
+			&tag.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tags = append(tags, tag)
 	}
 
-	if err := cursor.All(ctx, &result); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
-	if len(result) == 0 {
-		return []models.Tag{}, nil
-	}
-
-	if result[0].Tags == nil {
-		return []models.Tag{}, nil
-	}
-
-	return result[0].Tags, nil
+	return tags, nil
 }

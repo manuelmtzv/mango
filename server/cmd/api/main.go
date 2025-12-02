@@ -10,7 +10,7 @@ import (
 func main() {
 	cfg := LoadConfig()
 
-	database, err := db.New(cfg.DatabaseURL, cfg.DBName)
+	database, err := db.New(cfg.DBAddr, cfg.MaxOpenConns, cfg.MaxIdleConns, cfg.MaxIdleTime)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -18,7 +18,7 @@ func main() {
 
 	app := &application{
 		config: cfg,
-		store:  store.NewStorage(database.DB),
+		store:  store.NewStorage(database.Pool),
 	}
 
 	if err := app.serve(); err != nil {

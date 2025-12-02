@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -54,7 +54,7 @@ func (app *application) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := primitive.ObjectIDFromHex(sub)
+		userID, err := uuid.Parse(sub)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

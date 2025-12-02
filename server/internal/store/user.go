@@ -5,89 +5,141 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MongoUserStore struct {
-	coll *mongo.Collection
+type PostgresUserStore struct {
+	pool *pgxpool.Pool
 }
 
-func NewUserStore(db *mongo.Database) *MongoUserStore {
-	return &MongoUserStore{
-		coll: db.Collection("users"),
+func NewUserStore(pool *pgxpool.Pool) *PostgresUserStore {
+	return &PostgresUserStore{
+		pool: pool,
 	}
 }
 
-func (s *MongoUserStore) Create(ctx context.Context, user *models.User) error {
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-	res, err := s.coll.InsertOne(ctx, user)
-	if err != nil {
-		return err
-	}
-	user.ID = res.InsertedID.(primitive.ObjectID)
-	return nil
-}
+func (s *PostgresUserStore) Create(ctx context.Context, user *models.User) error {
+	query := `
+		INSERT INTO users (email, username, hash, name, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`
+	now := time.Now()
+	user.CreatedAt = now
+	user.UpdatedAt = now
 
-func (s *MongoUserStore) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	var user models.User
-	err := s.coll.FindOne(ctx, bson.M{"email": email}).Decode(&user)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
-}
+	err := s.pool.QueryRow(ctx, query,
+		user.Email,
+		user.Username,
+		user.Hash,
+		user.Name,
+		user.CreatedAt,
+		user.UpdatedAt,
+	).Scan(&user.ID)
 
-func (s *MongoUserStore) GetByEmailOrUsername(ctx context.Context, identifier string) (*models.User, error) {
-	var user models.User
-	err := s.coll.FindOne(ctx, bson.M{
-		"$or": []bson.M{
-			{"email": identifier},
-			{"username": identifier},
-		},
-	}).Decode(&user)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
-}
-
-func (s *MongoUserStore) GetByID(ctx context.Context, id primitive.ObjectID) (*models.User, error) {
-	var user models.User
-	err := s.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &user, nil
-}
-
-func (s *MongoUserStore) Update(ctx context.Context, user *models.User) error {
-	user.UpdatedAt = time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"email":     user.Email,
-			"username":  user.Username,
-			"name":      user.Name,
-			"updatedAt": user.UpdatedAt,
-		},
-	}
-	_, err := s.coll.UpdateOne(ctx, bson.M{"_id": user.ID}, update)
 	return err
 }
 
-func (s *MongoUserStore) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": id})
+func (s *PostgresUserStore) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	query := `
+		SELECT id, email, username, hash, name, created_at, updated_at
+		FROM users
+		WHERE email = $1
+	`
+	var user models.User
+	err := s.pool.QueryRow(ctx, query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.Hash,
+		&user.Name,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *PostgresUserStore) GetByEmailOrUsername(ctx context.Context, identifier string) (*models.User, error) {
+	query := `
+		SELECT id, email, username, hash, name, created_at, updated_at
+		FROM users
+		WHERE email = $1 OR username = $1
+	`
+	var user models.User
+	err := s.pool.QueryRow(ctx, query, identifier).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.Hash,
+		&user.Name,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *PostgresUserStore) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	query := `
+		SELECT id, email, username, hash, name, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+	var user models.User
+	err := s.pool.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.Hash,
+		&user.Name,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *PostgresUserStore) Update(ctx context.Context, user *models.User) error {
+	user.UpdatedAt = time.Now()
+	query := `
+		UPDATE users
+		SET email = $1, username = $2, name = $3, updated_at = $4
+		WHERE id = $5
+	`
+	_, err := s.pool.Exec(ctx, query,
+		user.Email,
+		user.Username,
+		user.Name,
+		user.UpdatedAt,
+		user.ID,
+	)
+	return err
+}
+
+func (s *PostgresUserStore) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM users WHERE id = $1`
+	_, err := s.pool.Exec(ctx, query, id)
 	return err
 }

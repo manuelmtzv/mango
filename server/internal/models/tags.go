@@ -3,17 +3,16 @@ package models
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 type Tag struct {
-	ID        primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
-	UserID    primitive.ObjectID   `bson:"userId" json:"userId"`
-	Name      string               `bson:"name" json:"name"`
-	Color     string               `bson:"color" json:"color"`
-	NoteIDs   []primitive.ObjectID `bson:"noteIDs" json:"noteIDs"`
-	CreatedAt time.Time            `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time            `bson:"updatedAt" json:"updatedAt"`
+	ID        uuid.UUID `db:"id" json:"id"`
+	UserID    uuid.UUID `db:"user_id" json:"userId"`
+	Name      string    `db:"name" json:"name"`
+	Color     string    `db:"color" json:"color"`
+	CreatedAt time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
 }
 
 type PaginatedTagsResponse struct {

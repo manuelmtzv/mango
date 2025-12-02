@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/auth"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/store"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Seeder struct {
@@ -65,7 +65,7 @@ func (s *Seeder) seedUsers(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		var userID primitive.ObjectID
+		var userID uuid.UUID
 		if existing != nil {
 			log.Printf("User %s already exists, seeding data...", userData.Email)
 			userID = existing.ID
@@ -97,13 +97,13 @@ func (s *Seeder) seedUsers(ctx context.Context) error {
 	return nil
 }
 
-func (s *Seeder) seedTagsAndNotes(ctx context.Context, userID primitive.ObjectID) error {
+func (s *Seeder) seedTagsAndNotes(ctx context.Context, userID uuid.UUID) error {
 	tags := []string{"work", "personal", "ideas", "todo"}
 	createdTags, err := s.store.Tags.FindOrCreate(ctx, userID, tags)
 	if err != nil {
 		return err
 	}
-	log.Printf("Created %d tags for user %s", len(createdTags), userID.Hex())
+	log.Printf("Created %d tags for user %s", len(createdTags), userID.String())
 
 	notes := []struct {
 		Title    string
@@ -128,7 +128,7 @@ func (s *Seeder) seedTagsAndNotes(ctx context.Context, userID primitive.ObjectID
 	}
 
 	for _, noteData := range notes {
-		var tagIDs []primitive.ObjectID
+		var tagIDs []uuid.UUID
 		for _, tagName := range noteData.TagNames {
 			for _, tag := range createdTags {
 				if tag.Name == tagName {
@@ -142,14 +142,13 @@ func (s *Seeder) seedTagsAndNotes(ctx context.Context, userID primitive.ObjectID
 			UserID:  userID,
 			Title:   noteData.Title,
 			Content: noteData.Content,
-			TagIDs:  tagIDs,
 		}
 
 		if err := s.store.Notes.Create(ctx, note); err != nil {
 			return err
 		}
 	}
-	log.Printf("Created %d notes for user %s", len(notes), userID.Hex())
+	log.Printf("Created %d notes for user %s", len(notes), userID.String())
 
 	return nil
 }

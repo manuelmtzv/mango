@@ -1,6 +1,7 @@
 package env
 
 import (
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -11,6 +12,14 @@ import (
 
 func Load() error {
 	return godotenv.Load(".env")
+}
+
+func GetRequired(key string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		log.Fatalf("Environment variable %s is required", key)
+	}
+	return val
 }
 
 func GetString(key, fallback string) string {
