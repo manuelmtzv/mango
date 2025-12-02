@@ -21,7 +21,9 @@ type NoteTagsEditFormEmits = {
 const props = defineProps<NoteTagsEditFormProps>();
 const emit = defineEmits<NoteTagsEditFormEmits>();
 const { tags, isLoading } = useTags();
-const tagsToBeAttached = ref<ITag[]>([...props.note.tags]);
+const tagsToBeAttached = ref<ITag[]>(
+  props.note.tags ? [...props.note.tags] : [],
+);
 const {
   editNoteTagsAsync,
   editNoteTagsMutation: { isLoading: loadingUpdate },
@@ -47,10 +49,10 @@ const remainingTags = computed(() => {
 });
 
 async function handleSave() {
-  const tagNames = tagsToBeAttached.value.map((tag) => tag.name);
+  const tagIds = tagsToBeAttached.value.map((tag) => tag.id);
 
   try {
-    await editNoteTagsAsync({ id: props.note.id, tags: tagNames });
+    await editNoteTagsAsync({ id: props.note.id, tags: tagIds });
     emit("save");
     toast.success("Tags saved successfully");
   } catch (error) {
