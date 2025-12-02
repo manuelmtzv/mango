@@ -1,0 +1,11 @@
+_legacy/
+bin/
+.git/
+.env
+*.md
+.gitignore
+.vscode/
+.idea/
+*.test
+coverage/
+tmp/
