@@ -9,8 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/google/uuid"
-	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
 )
 
 func (s *Server) routes() http.Handler {
@@ -32,8 +30,8 @@ func (s *Server) routes() http.Handler {
 	})
 
 	workDir, _ := os.Getwd()
-	filesDir := http.Dir(filepath.Join(workDir, "assets"))
-	FileServer(r, "/assets", filesDir)
+	filesDir := http.Dir(filepath.Join(workDir, "web/static"))
+	FileServer(r, "/static", filesDir)
 
 	r.Get("/", s.home)
 	r.Get("/login", s.loginPage)
@@ -47,19 +45,7 @@ func (s *Server) routes() http.Handler {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", s.register)
 		r.Post("/login", s.login)
-		r.With(s.AuthMiddleware).Get("/validate-token", func(w http.ResponseWriter, r *http.Request) {
-			token := GetJwt(r)
-			userID := r.Context().Value(UserIDKey).(uuid.UUID)
-			user, err := s.store.Users.GetByID(r.Context(), userID)
-			if err != nil {
-				s.errorJSON(w, err, http.StatusInternalServerError)
-				return
-			}
-			s.writeJSON(w, http.StatusOK, models.LoginResponse{
-				Username:    user.Username,
-				AccessToken: token,
-			})
-		})
+		r.With(s.AuthMiddleware).Post("/logout", s.logout)
 	})
 
 	r.Route("/users", func(r chi.Router) {
@@ -100,7 +86,10 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		r.Get(
+			path,
+			http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP,
+		)
 		path += "/"
 	}
 	path += "*"

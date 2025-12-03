@@ -4,8 +4,8 @@
   "description": "Frontend for Mango",
   "main": "index.js",
   "scripts": {
-    "watch:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/cssoutput.css --watch",
-    "build:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/cssoutput.css --minify"
+    "watch:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/css/output.css --watch",
+    "build:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/css/output.css --minify"
   },
   "keywords": [],
   "author": "manuelmtzv",

@@ -10,7 +10,8 @@ type Config struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	MaxIdleTime     string
-	JWTSecret       string
+	RedisAddr       string
+	RedisPassword   string
 	DefaultTagLimit int64
 }
 
@@ -23,7 +24,8 @@ func LoadConfig() *Config {
 		MaxOpenConns:    env.GetInt("DB_MAX_OPEN_CONNS", 30),
 		MaxIdleConns:    env.GetInt("DB_MAX_IDLE_CONNS", 30),
 		MaxIdleTime:     env.GetString("DB_MAX_IDLE_TIME", "15m"),
-		JWTSecret:       env.GetRequired("JWT_SECRET"),
+		RedisAddr:       env.GetString("REDIS_ADDR", "localhost:6379"),
+		RedisPassword:   env.GetString("REDIS_PASSWORD", ""),
 		DefaultTagLimit: env.GetInt64("DEFAULT_TAG_LIMIT", 100),
 	}
 }

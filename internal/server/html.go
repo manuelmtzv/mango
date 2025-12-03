@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 )
 
-func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data any) {
+func (s *Server) render(w http.ResponseWriter, _ *http.Request, page string, data any) {
 	files := []string{
-		filepath.Join("views", "layouts", "base.html"),
-		filepath.Join("views", "pages", page),
+		filepath.Join("web", "templates", "layouts", "base.html"),
+		filepath.Join("web", "templates", "pages", page),
 	}
 
 	ts, err := template.ParseFiles(files...)

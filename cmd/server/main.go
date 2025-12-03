@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/manuelmtzv/mangocatnotes-api/internal/cache"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/config"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/db"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/server"
@@ -18,7 +19,13 @@ func main() {
 	}
 	defer database.Close()
 
-	s := server.New(cfg, store.NewStorage(database.Pool))
+	cacheClient, err := cache.New(cfg.RedisAddr, cfg.RedisPassword, 0)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer cacheClient.Close()
+
+	s := server.New(cfg, store.NewStorage(database.Pool), cacheClient)
 
 	if err := s.Start(); err != nil {
 		log.Fatalf("Server failed: %v", err)

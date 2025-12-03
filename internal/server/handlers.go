@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -47,15 +48,24 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := GenerateToken(user.ID.String(), s.cfg.JWTSecret)
+	sessionID, err := s.cache.CreateSession(r.Context(), user.ID, 7*24*time.Hour)
 	if err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	s.writeJSON(w, http.StatusCreated, models.LoginResponse{
-		Username:    user.Username,
-		AccessToken: token,
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	s.writeJSON(w, http.StatusCreated, map[string]any{
+		"username": user.Username,
 	})
 }
 
@@ -95,15 +105,24 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := GenerateToken(user.ID.String(), s.cfg.JWTSecret)
+	sessionID, err := s.cache.CreateSession(r.Context(), user.ID, 7*24*time.Hour)
 	if err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	s.writeJSON(w, http.StatusOK, models.LoginResponse{
-		Username:    user.Username,
-		AccessToken: token,
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Value:    sessionID,
+		Path:     "/",
+		MaxAge:   7 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"username": user.Username,
 	})
 }
 
