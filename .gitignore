@@ -30,6 +30,8 @@ pnpm-debug.log*
 dist/
 build/
 out/
+
+!web/static/js/*.min.js
 *.min.js
 *.min.css
 
