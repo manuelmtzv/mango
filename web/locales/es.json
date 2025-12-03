@@ -1,0 +1,13 @@
+{
+  "index.title": "Inicio",
+  "index.description": "Bienvenido a Mango",
+  "login.title": "Iniciar Sesión",
+  "register.title": "Registrarse",
+  "dashboard.title": "Panel",
+  "meta.description": "Mango - Una aplicación simple para tomar notas",
+  "nav.home": "Inicio",
+  "nav.login": "Iniciar Sesión",
+  "nav.register": "Registrarse",
+  "nav.dashboard": "Panel",
+  "nav.logout": "Cerrar Sesión"
+}

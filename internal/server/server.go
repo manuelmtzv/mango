@@ -30,6 +30,10 @@ func New(cfg *config.Config, store *store.Storage, cache *cache.Cache) *Server {
 }
 
 func (s *Server) Start() error {
+	if err := s.i18n.LoadDir("web/locales"); err != nil {
+		return fmt.Errorf("failed to load translations: %w", err)
+	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", s.cfg.Port),
 		Handler:      s.routes(),

@@ -13,6 +13,7 @@ type Config struct {
 	RedisAddr       string
 	RedisPassword   string
 	DefaultTagLimit int64
+	BaseURL         string
 }
 
 func LoadConfig() *Config {
@@ -27,5 +28,6 @@ func LoadConfig() *Config {
 		RedisAddr:       env.GetString("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:   env.GetString("REDIS_PASSWORD", ""),
 		DefaultTagLimit: env.GetInt64("DEFAULT_TAG_LIMIT", 100),
+		BaseURL:         env.GetString("BASE_URL", "http://localhost:8080"),
 	}
 }

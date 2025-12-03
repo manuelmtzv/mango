@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
+
+const localeKey contextKey = "locale"
 
 func (s *Server) routes() http.Handler {
 	r := chi.NewRouter()
@@ -33,51 +36,73 @@ func (s *Server) routes() http.Handler {
 	filesDir := http.Dir(filepath.Join(workDir, "web/static"))
 	FileServer(r, "/static", filesDir)
 
-	r.Get("/", s.home)
-	r.Get("/login", s.loginPage)
-	r.Get("/register", s.registerPage)
+	r.Get("/", s.handleRoot)
 
-	r.Group(func(r chi.Router) {
+	r.Route("/{locale}", func(r chi.Router) {
+		r.Use(s.localeMiddleware)
 
-		r.Get("/dashboard", s.dashboard)
-	})
+		r.Get("/", s.home)
+		r.Get("/login", s.loginPage)
+		r.Get("/register", s.registerPage)
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", s.register)
-		r.Post("/login", s.login)
-		r.With(s.AuthMiddleware).Post("/logout", s.logout)
-	})
+		r.Group(func(r chi.Router) {
+			r.Get("/dashboard", s.dashboard)
+		})
 
-	r.Route("/users", func(r chi.Router) {
-		r.Use(s.AuthMiddleware)
-		r.Get("/me", s.getMe)
-	})
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", s.register)
+			r.Post("/login", s.login)
+			r.With(s.AuthMiddleware).Post("/logout", s.logout)
+		})
 
-	r.Route("/notes", func(r chi.Router) {
-		r.Use(s.AuthMiddleware)
-		r.Get("/", s.getNotes)
-		r.Post("/", s.createNote)
-		r.Get("/{id}", s.getNote)
-		r.Patch("/{id}", s.updateNote)
-		r.Delete("/{id}", s.deleteNote)
+		r.Route("/users", func(r chi.Router) {
+			r.Use(s.AuthMiddleware)
+			r.Get("/me", s.getMe)
+		})
 
-		r.Get("/{id}/tags", s.getNoteTags)
-		r.Patch("/{id}/tags", s.attachNoteTags)
-		r.Patch("/{id}/tags/{tagId}", s.attachNoteTag)
-		r.Delete("/{id}/tags/{tagId}", s.detachNoteTag)
-	})
+		r.Route("/notes", func(r chi.Router) {
+			r.Use(s.AuthMiddleware)
+			r.Get("/", s.getNotes)
+			r.Post("/", s.createNote)
+			r.Get("/{id}", s.getNote)
+			r.Patch("/{id}", s.updateNote)
+			r.Delete("/{id}", s.deleteNote)
 
-	r.Route("/tags", func(r chi.Router) {
-		r.Use(s.AuthMiddleware)
-		r.Get("/", s.getTags)
-		r.Post("/", s.createTag)
-		r.Post("/find-or-create", s.findTagsOrCreate)
-		r.Get("/{id}", s.getTag)
-		r.Patch("/{id}", s.updateTag)
-		r.Delete("/{id}", s.deleteTag)
+			r.Get("/{id}/tags", s.getNoteTags)
+			r.Patch("/{id}/tags", s.attachNoteTags)
+			r.Patch("/{id}/tags/{tagId}", s.attachNoteTag)
+			r.Delete("/{id}/tags/{tagId}", s.detachNoteTag)
+		})
+
+		r.Route("/tags", func(r chi.Router) {
+			r.Use(s.AuthMiddleware)
+			r.Get("/", s.getTags)
+			r.Post("/", s.createTag)
+			r.Post("/find-or-create", s.findTagsOrCreate)
+			r.Get("/{id}", s.getTag)
+			r.Patch("/{id}", s.updateTag)
+			r.Delete("/{id}", s.deleteTag)
+		})
 	})
 
 	return r
+}
+
+func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/en/", http.StatusFound)
+}
+
+func (s *Server) localeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		locale := chi.URLParam(r, "locale")
+		// Simple validation, could be improved
+		if locale != "en" && locale != "es" {
+			http.NotFound(w, r)
+			return
+		}
+		ctx := context.WithValue(r.Context(), localeKey, locale)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func FileServer(r chi.Router, path string, root http.FileSystem) {

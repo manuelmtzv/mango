@@ -1,0 +1,13 @@
+{
+  "index.title": "Home",
+  "index.description": "Welcome to Mango",
+  "login.title": "Login",
+  "register.title": "Register",
+  "dashboard.title": "Dashboard",
+  "meta.description": "Mango - A simple note taking app",
+  "nav.home": "Home",
+  "nav.login": "Login",
+  "nav.register": "Register",
+  "nav.dashboard": "Dashboard",
+  "nav.logout": "Logout"
+}
