@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4F46E5;
+  --color-secondary: #10B981;
+  --font-sans: "Inter", "sans-serif";
+}
+
+@layer base {
+  [x-cloak] { display: none !important; }
+}

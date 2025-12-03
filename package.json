@@ -1,0 +1,17 @@
+{
+  "name": "mango",
+  "version": "1.0.0",
+  "description": "Frontend for Mango",
+  "main": "index.js",
+  "scripts": {
+    "watch:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/cssoutput.css --watch",
+    "build:css": "npx @tailwindcss/cli -i ./web/static/css/input.css -o ./web/static/cssoutput.css --minify"
+  },
+  "keywords": [],
+  "author": "manuelmtzv",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/cli": "4.1.17",
+    "tailwindcss": "4.1.17"
+  }
+}

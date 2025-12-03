@@ -1,0 +1,552 @@
+package server
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
+)
+
+func (s *Server) register(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email    string `json:"email" validate:"required,email"`
+		Username string `json:"username" validate:"required,min=3,max=30"`
+		Password string `json:"password" validate:"required,strongpassword"`
+		Name     string `json:"name"`
+	}
+
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if err := s.validateStruct(input); err != nil {
+		s.writeJSON(w, http.StatusBadRequest, s.formatValidationErrors(err))
+		return
+	}
+
+	hash, err := HashPassword(input.Password)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	user := &models.User{
+		Email:    input.Email,
+		Username: input.Username,
+		Hash:     hash,
+		Name:     input.Name,
+	}
+
+	if err := s.store.Users.Create(r.Context(), user); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	token, err := GenerateToken(user.ID.String(), s.cfg.JWTSecret)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, models.LoginResponse{
+		Username:    user.Username,
+		AccessToken: token,
+	})
+}
+
+func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Identifier string `json:"identifier" validate:"required"`
+		Password   string `json:"password" validate:"required"`
+	}
+
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if err := s.validateStruct(input); err != nil {
+		s.writeJSON(w, http.StatusBadRequest, s.formatValidationErrors(err))
+		return
+	}
+
+	user, err := s.store.Users.GetByEmailOrUsername(r.Context(), input.Identifier)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		return
+	}
+	if user == nil {
+		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		return
+	}
+
+	match, err := VerifyPassword(input.Password, user.Hash)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	if !match {
+		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		return
+	}
+
+	token, err := GenerateToken(user.ID.String(), s.cfg.JWTSecret)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, models.LoginResponse{
+		Username:    user.Username,
+		AccessToken: token,
+	})
+}
+
+func (s *Server) getMe(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	user, err := s.store.Users.GetByID(r.Context(), userID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, user)
+}
+
+func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	var input models.Note
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	input.UserID = userID
+	if err := s.store.Notes.Create(r.Context(), &input); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), input.ID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	input.Tags = tags
+
+	s.writeJSON(w, http.StatusCreated, input)
+}
+
+func (s *Server) getNotes(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
+	if limit < 1 {
+		limit = 10
+	}
+
+	search := r.URL.Query().Get("search")
+	tags := r.URL.Query()["tags"]
+
+	notes, count, err := s.store.Notes.GetAll(r.Context(), userID, int64(page), int64(limit), search, tags)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if notes == nil {
+		notes = []models.Note{}
+	}
+
+	for i := range notes {
+		noteTags, err := s.store.Notes.GetTags(r.Context(), notes[i].ID)
+		if err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+		notes[i].Tags = noteTags
+	}
+
+	s.writeJSON(w, http.StatusOK, models.PaginatedNotesResponse{
+		Data: notes,
+		Meta: models.PaginationMetadata{
+			Page:       (page),
+			Limit:      (limit),
+			Count:      count,
+			TotalPages: (count + limit - 1) / limit,
+		},
+	})
+}
+
+func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	if note == nil {
+		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), note.ID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	note.Tags = tags
+
+	s.writeJSON(w, http.StatusOK, note)
+}
+
+func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	var input models.Note
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	input.ID = id
+	if err := s.store.Notes.Update(r.Context(), &input); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), input.ID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	input.Tags = tags
+
+	s.writeJSON(w, http.StatusOK, input)
+}
+
+func (s *Server) deleteNote(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.Notes.Delete(r.Context(), id); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) createTag(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	var input models.Tag
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	existingTags, _, err := s.store.Tags.GetAll(r.Context(), userID, 1, 1000)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	for _, tag := range existingTags {
+		if tag.Name == input.Name {
+			s.errorJSON(w, fmt.Errorf("Tag with provided name (%s) already exists.", input.Name), http.StatusBadRequest)
+			return
+		}
+	}
+
+	input.UserID = userID
+	if err := s.store.Tags.Create(r.Context(), &input); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusCreated, input)
+}
+
+func (s *Server) getTags(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+
+	tags, count, err := s.store.Tags.GetAll(r.Context(), userID, 1, 1000)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if tags == nil {
+		tags = []models.Tag{}
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"data":  tags,
+		"count": count,
+	})
+}
+
+func (s *Server) getTag(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	tag, err := s.store.Tags.GetByID(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	if tag == nil {
+		s.errorJSON(w, errors.New("tag not found"), http.StatusNotFound)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, tag)
+}
+
+func (s *Server) updateTag(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	var input models.Tag
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	input.ID = id
+	if err := s.store.Tags.Update(r.Context(), &input); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, input)
+}
+
+func (s *Server) deleteTag(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.Tags.Delete(r.Context(), id); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) findTagsOrCreate(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	var input struct {
+		Tags []string `json:"tags"`
+	}
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	tags, err := s.store.Tags.FindOrCreate(r.Context(), userID, input.Tags)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, map[string]any{
+		"data":  tags,
+		"count": len(tags),
+	})
+}
+
+func (s *Server) getNoteTags(w http.ResponseWriter, r *http.Request) {
+	noteIDParam := chi.URLParam(r, "id")
+	noteID, err := uuid.Parse(noteIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, tags)
+}
+
+func (s *Server) attachNoteTags(w http.ResponseWriter, r *http.Request) {
+	noteIDParam := chi.URLParam(r, "id")
+	noteID, err := uuid.Parse(noteIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		Tags []string `json:"tags"`
+	}
+	if err := s.readJSON(w, r, &input); err != nil {
+		s.errorJSON(w, err, http.StatusBadRequest)
+		return
+	}
+
+	var newTagIDs []uuid.UUID
+	for _, idStr := range input.Tags {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			s.errorJSON(w, errors.New("invalid tag id in list"), http.StatusBadRequest)
+			return
+		}
+		newTagIDs = append(newTagIDs, id)
+	}
+
+	existingTags, err := s.store.Notes.GetTags(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	for _, existingTag := range existingTags {
+		found := false
+		for _, newTagID := range newTagIDs {
+			if existingTag.ID == newTagID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if err := s.store.Notes.DetachTag(r.Context(), noteID, existingTag.ID); err != nil {
+				s.errorJSON(w, err, http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
+	if len(newTagIDs) > 0 {
+		if err := s.store.Notes.AttachTags(r.Context(), noteID, newTagIDs); err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	note.Tags = tags
+
+	s.writeJSON(w, http.StatusOK, note)
+}
+
+func (s *Server) attachNoteTag(w http.ResponseWriter, r *http.Request) {
+	noteIDParam := chi.URLParam(r, "id")
+	noteID, err := uuid.Parse(noteIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
+		return
+	}
+
+	tagIDParam := chi.URLParam(r, "tagId")
+	tagID, err := uuid.Parse(tagIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid tag id"), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.Notes.AttachTags(r.Context(), noteID, []uuid.UUID{tagID}); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	note.Tags = tags
+
+	s.writeJSON(w, http.StatusOK, note)
+}
+
+func (s *Server) detachNoteTag(w http.ResponseWriter, r *http.Request) {
+	noteIDParam := chi.URLParam(r, "id")
+	noteID, err := uuid.Parse(noteIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid note id"), http.StatusBadRequest)
+		return
+	}
+
+	tagIDParam := chi.URLParam(r, "tagId")
+	tagID, err := uuid.Parse(tagIDParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid tag id"), http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.Notes.DetachTag(r.Context(), noteID, tagID); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tags, err := s.store.Notes.GetTags(r.Context(), noteID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	note.Tags = tags
+
+	s.writeJSON(w, http.StatusOK, note)
+}
