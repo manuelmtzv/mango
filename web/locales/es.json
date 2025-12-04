@@ -14,5 +14,18 @@
   "nav.register": "Registrarse",
   "nav.dashboard": "Panel",
   "nav.logout": "Cerrar Sesión",
-  "footer.copyright": "Mango. Todos los derechos reservados."
+  "footer.copyright": "Mango. Todos los derechos reservados.",
+  "footer.about": "Acerca de",
+  "footer.contact": "Contacto",
+  "footer.privacy": "Privacidad",
+  "footer.terms": "Términos",
+  "footer.madeby": "Hecho por",
+  "footer.language": "Idioma",
+  "features.title": "Características Destacadas:",
+  "features.notes.title": "Gestión de Notas Gratis",
+  "features.notes.description": "Crea y administra tus notas sin ningún costo.",
+  "features.multilang.title": "Soporte Multilingüe",
+  "features.multilang.description": "Accede a la aplicación en tu idioma preferido.",
+  "features.tags.title": "Organiza con Etiquetas",
+  "features.tags.description": "Categoriza y encuentra tus notas fácilmente con etiquetas personalizadas."
 }

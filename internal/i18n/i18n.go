@@ -17,7 +17,7 @@ type Manager struct {
 	locales []string
 }
 
-var hiddenLocales = []string{"it"}
+var hiddenLocales = []string{}
 
 func NewManager() *Manager {
 	bundle := i18n.NewBundle(language.English)

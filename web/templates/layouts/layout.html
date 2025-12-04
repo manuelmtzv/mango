@@ -1,55 +1,60 @@
 <!doctype html>
 <html lang="{{.Lang}}">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ .Title }} - Mango</title>
-        <meta name="description" content="{{.Description}}" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ .Title }} - Mango</title>
+    <meta name="description" content="{{.Description}}" />
 
-        <link rel="canonical" href="{{.BaseURL}}{{.CurrentPath}}" />
-        {{range .Locales}}
-        <link
-            rel="alternate"
-            hreflang="{{.}}"
-            href="{{$.BaseURL}}/{{.}}{{$.CurrentPath}}"
-        />
-        {{end}}
+    <link rel="canonical" href="{{.BaseURL}}{{.CurrentPath}}" />
+    {{range .Locales}}
+    <link
+      rel="alternate"
+      hreflang="{{.}}"
+      href="{{$.BaseURL}}/{{.}}{{$.CurrentPath}}"
+    />
+    {{end}}
 
-        <meta property="og:title" content="{{.Title}}" />
-        <meta property="og:description" content="{{.Description}}" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="{{.BaseURL}}{{.CurrentPath}}" />
+    <meta property="og:title" content="{{.Title}}" />
+    <meta property="og:description" content="{{.Description}}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="{{.BaseURL}}{{.CurrentPath}}" />
 
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="{{.Title}}" />
-        <meta name="twitter:description" content="{{.Description}}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{.Title}}" />
+    <meta name="twitter:description" content="{{.Description}}" />
 
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
-            rel="stylesheet"
-        />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
 
-        <link href="/static/css/output.css" rel="stylesheet" />
+    <link href="/static/css/output.css?v={{.AssetVersion}}" rel="stylesheet" />
 
-        <script src="/static/js/htmx.min.js"></script>
-        <script defer src="/static/js/alpine.min.js"></script>
-        <script src="/static/js/motion.min.js"></script>
+    <script src="/static/js/htmx.min.js?v={{.AssetVersion}}"></script>
+    <script defer src="/static/js/alpine.min.js?v={{.AssetVersion}}"></script>
+    <script src="/static/js/motion.min.js?v={{.AssetVersion}}"></script>
 
-        <style>
-            [x-cloak] {
-                display: none !important;
-            }
-        </style>
-    </head>
-    <body
-        class="flex flex-col bg-dark-900 text-gray-100 font-sans antialiased min-h-svh"
-    >
-        {{ template "header" . }}
+    <style>
+      [x-cloak] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body
+    class="flex flex-col bg-dark-900 text-gray-100 font-sans antialiased min-h-svh"
+  >
+    {{ template "header" . }}
 
-        <main class="flex-1">{{ template "content" . }}</main>
+    <main class="flex-1">{{ template "content" . }}</main>
 
-        {{ template "footer" . }}
-    </body>
+    {{ template "footer" . }}
+  </body>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </html>

@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -59,6 +60,13 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["CurrentPath"] = r.URL.Path
 	data["BaseURL"] = s.cfg.BaseURL
 	data["CurrentYear"] = time.Now().Year()
+	data["AssetVersion"] = s.AssetVersion
+
+	pathWithoutLocale := strings.TrimPrefix(r.URL.Path, "/"+locale)
+	if pathWithoutLocale == "" {
+		pathWithoutLocale = "/"
+	}
+	data["PathWithoutLocale"] = pathWithoutLocale
 
 	err = tmpl.Execute(w, data)
 	if err != nil {
@@ -67,9 +75,28 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+	features := []map[string]string{
+		{
+			"icon":     "notebook-pen",
+			"titleKey": "features.notes.title",
+			"descKey":  "features.notes.description",
+		},
+		{
+			"icon":     "globe",
+			"titleKey": "features.multilang.title",
+			"descKey":  "features.multilang.description",
+		},
+		{
+			"icon":     "tags",
+			"titleKey": "features.tags.title",
+			"descKey":  "features.tags.description",
+		},
+	}
+
 	s.render(w, r, "index.html", map[string]any{
 		"Title":       "index.title",
 		"Description": "index.description",
+		"Features":    features,
 	})
 }
 

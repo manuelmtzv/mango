@@ -89,14 +89,14 @@ func (s *Server) routes() http.Handler {
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/en/", http.StatusFound)
+	http.Redirect(w, r, "/es/", http.StatusFound)
 }
 
 func (s *Server) localeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		locale := chi.URLParam(r, "locale")
 
-		if locale != "en" && locale != "es" {
+		if locale != "en" && locale != "es" && locale != "it" {
 			http.NotFound(w, r)
 			return
 		}
