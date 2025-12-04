@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"time"
 )
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data map[string]any) {
@@ -18,6 +19,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"t": t,
 	}
 
 	partials, err := filepath.Glob("web/templates/partials/*.html")
@@ -56,6 +58,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 
 	data["CurrentPath"] = r.URL.Path
 	data["BaseURL"] = s.cfg.BaseURL
+	data["CurrentYear"] = time.Now().Year()
 
 	err = tmpl.Execute(w, data)
 	if err != nil {

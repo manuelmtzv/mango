@@ -1,6 +1,10 @@
 {
   "index.title": "Inicio",
   "index.description": "Bienvenido a Mango",
+  "index.hero.heading": "¡Hola, bienvenido a Mango!",
+  "index.hero.description_line1": "Mango es una aplicación web gratuita para la gestión de notas. Te permite crear y administrar tus notas desde cualquier dispositivo con un navegador web.",
+  "index.hero.description_line2": "¡Regístrate ahora para comenzar a organizar tus notas. Accede a ellas desde cualquier lugar! 🐱🥭",
+  "index.hero.cta": "¡Comienza a crear notas!",
   "login.title": "Iniciar Sesión",
   "register.title": "Registrarse",
   "dashboard.title": "Panel",
@@ -9,5 +13,6 @@
   "nav.login": "Iniciar Sesión",
   "nav.register": "Registrarse",
   "nav.dashboard": "Panel",
-  "nav.logout": "Cerrar Sesión"
+  "nav.logout": "Cerrar Sesión",
+  "footer.copyright": "Mango. Todos los derechos reservados."
 }
