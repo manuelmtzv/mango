@@ -1,0 +1,86 @@
+{{ define "content" }}
+<div class="flex items-center justify-center min-h-[calc(100svh-146px)] px-4 py-12">
+  <div
+    class="w-full max-w-md bg-dark-800/60 backdrop-blur-sm rounded-2xl border border-border p-8 shadow-2xl"
+  >
+    <div class="text-center mb-8">
+      <h1 class="font-serif text-3xl font-bold text-foreground mb-2">
+        {{t "login.heading"}}
+      </h1>
+      <p class="text-muted-foreground text-sm">{{t "login.subheading"}}</p>
+    </div>
+
+    <form class="space-y-5" hx-post="/{{.Lang}}/auth/login" hx-swap="none">
+      <div class="space-y-2">
+        <label for="email" class="block text-sm font-medium text-foreground">
+          {{t "login.email"}}
+        </label>
+        <div class="relative">
+          <div
+            class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
+          >
+            <i data-lucide="mail" class="w-5 h-5 text-muted-foreground"></i>
+          </div>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="{{t "login.email_placeholder"}}"
+            required
+            class="w-full pl-11 pr-4 py-2.5 bg-dark-700 border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+          />
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label
+            for="password"
+            class="block text-sm font-medium text-foreground"
+          >
+            {{t "login.password"}}
+          </label>
+          <a
+            href="#"
+            class="text-sm text-primary hover:text-primary/80 transition-colors"
+          >
+            {{t "login.forgot_password"}}
+          </a>
+        </div>
+        <div class="relative">
+          <div
+            class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
+          >
+            <i data-lucide="lock" class="w-5 h-5 text-muted-foreground"></i>
+          </div>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="{{t "login.password_placeholder"}}"
+            required
+            class="w-full pl-11 pr-4 py-2.5 bg-dark-700 border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+          />
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-dark-800"
+      >
+        {{t "login.submit"}}
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-sm text-muted-foreground">
+      {{t "login.no_account"}}
+      <a
+        href="{{.BaseURL}}/{{.Lang}}/register"
+        class="text-primary hover:text-primary/80 font-medium transition-colors"
+      >
+        {{t "login.signup_link"}}
+      </a>
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -9,8 +9,7 @@
         </p>
       </div>
 
-      <div>
-      </div>
+      <div></div>
 
       <div>
         <h4 class="font-medium mb-4 text-foreground">
@@ -22,7 +21,8 @@
             href="{{$.BaseURL}}/{{.}}{{$.PathWithoutLocale}}"
             class="text-xs px-3 py-1.5 rounded-md border border-border hover:border-primary/50 transition-colors {{if eq . $.Lang}}bg-primary/10 text-primary border-primary{{else}}text-muted-foreground hover:text-foreground{{end}}"
           >
-            {{if eq . "en"}}🇺🇸 EN{{else if eq . "es"}}🇪🇸 ES{{else if eq . "it"}}🇮🇹 IT{{end}}
+            {{if eq . "en"}}🇺🇸 EN{{else if eq . "es"}}🇪🇸 ES{{else if eq .
+            "it"}}🇮🇹 IT{{end}}
           </a>
           {{end}}
         </div>
