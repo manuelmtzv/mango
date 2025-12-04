@@ -95,7 +95,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 func (s *Server) localeMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		locale := chi.URLParam(r, "locale")
-		// Simple validation, could be improved
+
 		if locale != "en" && locale != "es" {
 			http.NotFound(w, r)
 			return

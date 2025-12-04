@@ -5,24 +5,31 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{{ .Title }} - Mango</title>
         <meta name="description" content="{{.Description}}" />
-        
+
         <link rel="canonical" href="{{.BaseURL}}{{.CurrentPath}}" />
         {{range .Locales}}
-        <link rel="alternate" hreflang="{{.}}" href="{{$.BaseURL}}/{{.}}{{$.CurrentPath}}" />
+        <link
+            rel="alternate"
+            hreflang="{{.}}"
+            href="{{$.BaseURL}}/{{.}}{{$.CurrentPath}}"
+        />
         {{end}}
-        
+
         <meta property="og:title" content="{{.Title}}" />
         <meta property="og:description" content="{{.Description}}" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="{{.BaseURL}}{{.CurrentPath}}" />
-        
+
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="{{.Title}}" />
         <meta name="twitter:description" content="{{.Description}}" />
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+            rel="stylesheet"
+        />
 
         <link href="/static/css/output.css" rel="stylesheet" />
 
@@ -36,34 +43,13 @@
             }
         </style>
     </head>
-    <body class="flex flex-col bg-dark-900 text-gray-100 font-sans antialiased min-h-svh">
-        <header class="py-4 backdrop-blur-xs sticky top-0 left-0 right-0 z-50 bg-transparent border-b border-dark-700">
-            <div class="flex items-center justify-between container mx-auto gap-4">
-                <a href="{{.BaseURL}}/{{.Lang}}" class="flex items-center font-serif text-2xl font-bold">
-                    Mango
-                </a>
+    <body
+        class="flex flex-col bg-dark-900 text-gray-100 font-sans antialiased min-h-svh"
+    >
+        {{ template "header" . }}
 
-                <nav>
-                    <ul class="flex gap-4">
-                        <li>
-                            <a href="{{.BaseURL}}/{{.Lang}}/login" class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium">{{t "nav.login"}}</a>
-                        </li>
-                        <li>
-                            <a href="{{.BaseURL}}/{{.Lang}}/register" class="primary-button">{{t "nav.register"}}</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </header>
+        <main class="flex-1">{{ template "content" . }}</main>
 
-        <main class="flex-1">
-            {{ template "content" . }}
-        </main>
-
-        <footer class="py-4">
-            <div class="container mx-auto">
-                <p>&copy; {{.CurrentYear}} {{t "footer.copyright"}}</p>
-            </div>
-        </footer>
+        {{ template "footer" . }}
     </body>
 </html>

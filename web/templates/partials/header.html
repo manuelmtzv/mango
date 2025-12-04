@@ -1,0 +1,33 @@
+{{ define "header" }}
+<header
+    class="py-4 backdrop-blur-xs sticky top-0 left-0 right-0 z-50 bg-transparent border-b border-dark-700"
+>
+    <div class="flex items-center justify-between container mx-auto gap-4">
+        <a
+            href="{{.BaseURL}}/{{.Lang}}"
+            class="flex items-center font-serif text-2xl font-bold"
+        >
+            Mango
+        </a>
+
+        <nav>
+            <ul class="flex gap-4">
+                <li>
+                    <a
+                        href="{{.BaseURL}}/{{.Lang}}/login"
+                        class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium"
+                        >{{t "nav.login"}}</a
+                    >
+                </li>
+                <li>
+                    <a
+                        href="{{.BaseURL}}/{{.Lang}}/register"
+                        class="primary-button"
+                        >{{t "nav.register"}}</a
+                    >
+                </li>
+            </ul>
+        </nav>
+    </div>
+</header>
+{{ end }}
