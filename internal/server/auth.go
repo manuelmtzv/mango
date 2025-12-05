@@ -62,11 +62,42 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		Name:     input.Name,
 	}
 
-	if err := s.store.Users.Create(r.Context(), user); err != nil {
+	existingUser, err := s.store.Users.GetByEmail(r.Context(), user.Email)
+	if err != nil {
+		s.logger.Errorw("failed to check existing user by email", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if existingUser != nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
 		s.renderBlock(w, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "register.error.email_taken"),
+		})
+		return
+	}
+
+	existingUser, err = s.store.Users.GetByUsername(r.Context(), user.Username)
+	if err != nil {
+		s.logger.Errorw("failed to check existing user by username", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if existingUser != nil {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": s.i18n.Translate(locale, "register.error.username_taken"),
+		})
+		return
+	}
+
+	if err := s.store.Users.Create(r.Context(), user); err != nil {
+		s.logger.Errorw("failed to create user", "error", err)
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": s.i18n.Translate(locale, "register.error.generic"),
 		})
 		return
 	}
@@ -131,6 +162,10 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := s.store.Users.GetByEmailOrUsername(r.Context(), input.Email)
+	if err != nil {
+		s.logger.Errorw("failed to get user during login", "email", input.Email, "error", err)
+	}
+
 	if err != nil || user == nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)

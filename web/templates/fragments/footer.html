@@ -30,11 +30,11 @@
     </div>
 
     <div
-      class="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground"
+      class="pt-8 border-t border-border grid md:grid-cols-3 gap-4 text-sm text-muted-foreground"
     >
       <p>&copy; {{.CurrentYear}} {{t "footer.copyright"}}</p>
 
-      <div class="flex gap-4">
+      <div class="flex items-center justify-center gap-4">
         <a
           href="#"
           class="hover:text-foreground transition-colors hover:underline"
@@ -47,7 +47,7 @@
         >
       </div>
 
-      <p>
+      <p class="text-end">
         {{t "footer.madeby"}}
         <a
           href="https://www.manuelmtzv.com"

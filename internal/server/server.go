@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/manuelmtzv/mangocatnotes-api/internal/config"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/i18n"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/session"
@@ -13,15 +15,17 @@ import (
 
 type Server struct {
 	cfg          *config.Config
+	logger       *zap.SugaredLogger
 	i18n         *i18n.Manager
 	store        *store.Storage
 	session      *session.SessionManager
 	AssetVersion string
 }
 
-func New(cfg *config.Config, store *store.Storage, session *session.SessionManager) *Server {
+func New(cfg *config.Config, logger *zap.SugaredLogger, store *store.Storage, session *session.SessionManager) *Server {
 	return &Server{
 		cfg:          cfg,
+		logger:       logger,
 		i18n:         i18n.NewManager(),
 		store:        store,
 		session:      session,

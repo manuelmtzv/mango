@@ -67,5 +67,9 @@ func VerifyPassword(password, hash string) (bool, error) {
 
 	comparisonHash := argon2.IDKey([]byte(password), salt, timeParam, memory, threads, keyLen)
 
-	return string(comparisonHash) == string(decodedHash), nil
+	if string(comparisonHash) != string(decodedHash) {
+		return false, nil
+	}
+
+	return true, nil
 }

@@ -69,6 +69,32 @@ func (s *PostgresUserStore) GetByEmail(ctx context.Context, email string) (*mode
 	return &user, nil
 }
 
+func (s *PostgresUserStore) GetByUsername(ctx context.Context, username string) (*models.User, error) {
+	query := `
+		SELECT id, email, username, hash, name, created_at, updated_at
+		FROM users
+		WHERE username = $1
+	`
+	var user models.User
+	err := s.pool.QueryRow(ctx, query, username).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.Hash,
+		&user.Name,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (s *PostgresUserStore) GetByEmailOrUsername(ctx context.Context, identifier string) (*models.User, error) {
 	query := `
 		SELECT id, email, username, hash, name, created_at, updated_at

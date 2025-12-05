@@ -46,6 +46,7 @@ func (s *Server) routes() http.Handler {
 		r.Get("/register", s.registerPage)
 
 		r.Group(func(r chi.Router) {
+			r.Use(s.AuthMiddleware)
 			r.Get("/dashboard", s.dashboard)
 		})
 

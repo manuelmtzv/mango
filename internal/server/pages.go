@@ -5,8 +5,12 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
 )
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data map[string]any) {
@@ -21,6 +25,12 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 			return template.HTML(s)
 		},
 		"t": t,
+		"add": func(a, b int64) int64 {
+			return a + b
+		},
+		"sub": func(a, b int64) int64 {
+			return a - b
+		},
 	}
 
 	partials, err := filepath.Glob("web/templates/partials/*.html")
@@ -144,7 +154,46 @@ func (s *Server) registerPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+	page, _ := strconv.ParseInt(r.URL.Query().Get("page"), 10, 64)
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
+	if limit < 1 {
+		limit = 10
+	}
+
+	search := r.URL.Query().Get("search")
+	tags := r.URL.Query()["tags"]
+
+	notes, count, err := s.store.Notes.GetAll(r.Context(), userID, int64(page), int64(limit), search, tags)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if notes == nil {
+		notes = []models.Note{}
+	}
+
+	for i := range notes {
+		noteTags, err := s.store.Notes.GetTags(r.Context(), notes[i].ID)
+		if err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+		notes[i].Tags = noteTags
+	}
+
 	s.render(w, r, "dashboard.html", map[string]any{
 		"Title": "dashboard.title",
+		"Notes": notes,
+		"Meta": models.PaginationMetadata{
+			Page:       (page),
+			Limit:      (limit),
+			Count:      count,
+			TotalPages: (count + limit - 1) / limit,
+		},
 	})
 }

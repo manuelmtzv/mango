@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+
+	"go.uber.org/zap"
 
 	"github.com/manuelmtzv/mangocatnotes-api/internal/config"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/db"
@@ -14,11 +15,16 @@ import (
 )
 
 func main() {
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer func() {
+		_ = logger.Sync()
+	}()
+
 	cfg := config.LoadConfig()
 
 	database, err := db.New(cfg.DBAddr, cfg.MaxOpenConns, cfg.MaxIdleConns, cfg.MaxIdleTime)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Fatalw("Failed to connect to database", "error", err)
 	}
 	defer database.Close()
 
@@ -29,7 +35,7 @@ func main() {
 	})
 
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		logger.Fatalw("Failed to connect to Redis", "error", err)
 	}
 
 	cache := kvstore.NewRedisStore(redisClient)
@@ -37,9 +43,9 @@ func main() {
 
 	session := session.NewSessionManager(cache)
 
-	s := server.New(cfg, store.NewStorage(database.Pool), session)
+	s := server.New(cfg, logger, store.NewStorage(database.Pool), session)
 
 	if err := s.Start(); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		logger.Fatalw("Server failed", "error", err)
 	}
 }
