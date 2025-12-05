@@ -72,5 +72,12 @@
   "features.multilang.title": "Multilingual Support",
   "features.multilang.description": "Access the app in your preferred language.",
   "features.tags.title": "Organize with Tags",
-  "features.tags.description": "Categorize and find your notes easily with custom tags."
+  "features.tags.description": "Categorize and find your notes easily with custom tags.",
+  "notes.create_new": "Create New Note",
+  "notes.title": "Title",
+  "notes.title_placeholder": "Note title",
+  "notes.content": "Content",
+  "notes.content_placeholder": "Write something...",
+  "common.cancel": "Cancel",
+  "common.save": "Save"
 }

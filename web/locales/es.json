@@ -72,5 +72,12 @@
   "features.multilang.title": "Soporte Multilingüe",
   "features.multilang.description": "Accede a la aplicación en tu idioma preferido.",
   "features.tags.title": "Organiza con Etiquetas",
-  "features.tags.description": "Categoriza y encuentra tus notas fácilmente con etiquetas personalizadas."
+  "features.tags.description": "Categoriza y encuentra tus notas fácilmente con etiquetas personalizadas.",
+  "notes.create_new": "Crear Nueva Nota",
+  "notes.title": "Título",
+  "notes.title_placeholder": "Título de la nota",
+  "notes.content": "Contenido",
+  "notes.content_placeholder": "Escribe algo...",
+  "common.cancel": "Cancelar",
+  "common.save": "Guardar"
 }

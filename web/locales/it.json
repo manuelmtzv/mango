@@ -72,5 +72,12 @@
   "features.multilang.title": "Supporto Multilingue",
   "features.multilang.description": "Accedi all'app nella tua lingua preferita.",
   "features.tags.title": "Organizza con i Tag",
-  "features.tags.description": "Categorizza e trova le tue note facilmente con tag personalizzati."
+  "features.tags.description": "Categorizza e trova facilmente le tue note con tag personalizzati.",
+  "notes.create_new": "Crea Nuova Nota",
+  "notes.title": "Titolo",
+  "notes.title_placeholder": "Titolo della nota",
+  "notes.content": "Contenuto",
+  "notes.content_placeholder": "Scrivi qualcosa...",
+  "common.cancel": "Annulla",
+  "common.save": "Salva"
 }

@@ -1,0 +1,93 @@
+{{ define "create_note_modal" }}
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  id="create-note-modal"
+  x-data="{
+    init() {
+      this.$nextTick(() => {
+        Motion.animate(this.$refs.backdrop, { opacity: [0, 1] }, { duration: 0.2 });
+        Motion.animate(this.$refs.panel, { opacity: [0, 1], scale: [0.9, 1], y: [20, 0] }, { duration: 0.2, easing: 'ease-in-out' });
+      });
+    },
+    close() {
+      Promise.all([
+        Motion.animate(this.$refs.backdrop, { opacity: 0 }, { duration: 0.2 }).finished,
+        Motion.animate(this.$refs.panel, { opacity: 0, scale: 0.95, y: 10 }, { duration: 0.2 }).finished
+      ]).then(() => {
+        document.getElementById('modal').innerHTML = '';
+      });
+    }
+  }"
+  @keydown.escape.window="close()"
+  @note-created.window="close()"
+>
+  <div
+    x-ref="backdrop"
+    class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0"
+    @click="close()"
+  ></div>
+
+  <div
+    x-ref="panel"
+    class="relative bg-dark-900 border border-border rounded-xl shadow-2xl w-full max-w-lg overflow-hidden opacity-0"
+  >
+    <div class="flex justify-between items-center p-4 border-b border-border">
+      <h3 class="font-serif text-xl font-bold text-foreground">{{t "notes.create_new"}}</h3>
+      <button
+        class="text-muted-foreground hover:text-foreground transition-colors"
+        @click="close()"
+      >
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <form
+      hx-post="/{{.Lang}}/notes"
+      hx-target="#notes-grid"
+      hx-swap="afterbegin"
+      class="p-4 space-y-4"
+    >
+      <div>
+        <label for="title" class="block text-sm font-medium text-muted-foreground mb-1">{{t "notes.title"}}</label>
+        <input
+          type="text"
+          name="title"
+          id="title"
+          required
+          class="w-full bg-dark-800 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+          placeholder="{{t "notes.title_placeholder"}}"
+          autofocus
+        />
+      </div>
+
+      <div>
+        <label for="content" class="block text-sm font-medium text-muted-foreground mb-1">{{t "notes.content"}}</label>
+        <textarea
+          name="content"
+          id="content"
+          required
+          rows="5"
+          class="w-full bg-dark-800 border border-border rounded-lg px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+          placeholder="{{t "notes.content_placeholder"}}"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4">
+        <button
+          type="button"
+          class="px-4 py-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-dark-800 transition-colors"
+          @click="close()"
+        >
+          {{t "common.cancel"}}
+        </button>
+        <button
+          type="submit"
+          class="primary-button"
+        >
+          {{t "common.save"}}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{{ end }}

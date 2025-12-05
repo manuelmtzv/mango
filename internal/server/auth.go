@@ -43,7 +43,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 			message = s.i18n.Translate(locale, "validation.failed")
 		}
 
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": message,
 		})
 		return
@@ -71,7 +71,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	if existingUser != nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "register.error.email_taken"),
 		})
 		return
@@ -86,7 +86,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	if existingUser != nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "register.error.username_taken"),
 		})
 		return
@@ -96,7 +96,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		s.logger.Errorw("failed to create user", "error", err)
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "register.error.generic"),
 		})
 		return
@@ -155,7 +155,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 			message = s.i18n.Translate(locale, "validation.failed")
 		}
 
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": message,
 		})
 		return
@@ -169,7 +169,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if err != nil || user == nil {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "login.error.invalid_credentials"),
 		})
 		return
@@ -183,7 +183,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if !match {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		s.renderBlock(w, "alert-error", map[string]any{
+		s.renderBlock(w, r, "alert-error", map[string]any{
 			"Message": s.i18n.Translate(locale, "login.error.invalid_credentials"),
 		})
 		return

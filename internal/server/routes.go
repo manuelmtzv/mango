@@ -64,6 +64,7 @@ func (s *Server) routes() http.Handler {
 		r.Route("/notes", func(r chi.Router) {
 			r.Use(s.AuthMiddleware)
 			r.Get("/", s.getNotes)
+			r.Get("/new", s.createNotePage)
 			r.Post("/", s.createNote)
 			r.Get("/{id}", s.getNote)
 			r.Patch("/{id}", s.updateNote)

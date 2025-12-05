@@ -91,11 +91,17 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	}
 }
 
-func (s *Server) renderBlock(w http.ResponseWriter, block string, data map[string]any) {
+func (s *Server) renderBlock(w http.ResponseWriter, r *http.Request, block string, data map[string]any) {
+	locale := r.Context().Value(localeKey).(string)
+	t := func(key string) string {
+		return s.i18n.Translate(locale, key)
+	}
+
 	funcMap := template.FuncMap{
 		"safeHTML": func(s string) template.HTML {
 			return template.HTML(s)
 		},
+		"t": t,
 	}
 
 	partials, err := filepath.Glob("web/templates/partials/*.html")
@@ -104,11 +110,24 @@ func (s *Server) renderBlock(w http.ResponseWriter, block string, data map[strin
 		return
 	}
 
-	tmpl, err := template.New("partials").Funcs(funcMap).ParseFiles(partials...)
+	fragments, err := filepath.Glob("web/templates/fragments/*.html")
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	files := append(partials, fragments...)
+
+	tmpl, err := template.New("partials").Funcs(funcMap).ParseFiles(files...)
 	if err != nil {
 		s.errorJSON(w, fmt.Errorf("error parsing template: %w", err), http.StatusInternalServerError)
 		return
 	}
+
+	if data == nil {
+		data = make(map[string]any)
+	}
+	data["Lang"] = locale
 
 	if err := tmpl.ExecuteTemplate(w, block, data); err != nil {
 		s.errorJSON(w, fmt.Errorf("error executing template block: %w", err), http.StatusInternalServerError)

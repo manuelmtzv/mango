@@ -45,6 +45,6 @@
 
 @layer components {
   .primary-button {
-    @apply px-3 py-1.5 rounded-lg bg-primary text-dark-900 hover:bg-primary/80 hover:text-black transition-colors duration-200 ease-in-out font-medium;
+    @apply px-3 py-1.5 rounded-lg bg-primary text-dark-900 hover:bg-primary/80 hover:text-black transition-colors duration-200 ease-in-out font-medium h-fit;
   }
 }

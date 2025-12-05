@@ -5,17 +5,34 @@ import (
 	"net/http"
 	"strconv"
 
+	"strings"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/models"
 )
 
+func (s *Server) createNotePage(w http.ResponseWriter, r *http.Request) {
+	s.renderBlock(w, r, "create_note_modal", nil)
+}
+
 func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	var input models.Note
-	if err := s.readJSON(w, r, &input); err != nil {
-		s.errorJSON(w, err, http.StatusBadRequest)
-		return
+
+	contentType := r.Header.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") {
+		if err := s.readJSON(w, r, &input); err != nil {
+			s.errorJSON(w, err, http.StatusBadRequest)
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			s.errorJSON(w, err, http.StatusBadRequest)
+			return
+		}
+		input.Title = r.FormValue("title")
+		input.Content = r.FormValue("content")
 	}
 
 	input.UserID = userID
@@ -30,6 +47,24 @@ func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	input.Tags = tags
+
+	if r.Header.Get("HX-Request") != "" {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("HX-Trigger", "note-created")
+		// We need to convert struct to map for renderBlock because it expects map[string]any
+		// TODO: Refactor renderBlock to accept any
+		data := map[string]any{
+			"Title":     input.Title,
+			"Content":   input.Content,
+			"ID":        input.ID,
+			"UpdatedAt": input.UpdatedAt,
+			"Tags":      input.Tags,
+		}
+		s.renderBlock(w, r, "note-card", data)
+		w.Write([]byte(`<div id="empty-state" hx-swap-oob="delete"></div>`))
+		w.Write([]byte(`<div id="notes-grid" hx-swap-oob="removeClass:hidden"></div>`))
+		return
+	}
 
 	s.writeJSON(w, http.StatusCreated, input)
 }
