@@ -29,10 +29,17 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		return
 	}
 
+	fragments, err := filepath.Glob("web/templates/fragments/*.html")
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
 	files := append([]string{
 		filepath.Join("web", "templates", "layouts", "layout.html"),
 		filepath.Join("web", "templates", "pages", page),
 	}, partials...)
+	files = append(files, fragments...)
 
 	tmpl, err := template.New("layout.html").Funcs(funcMap).ParseFiles(files...)
 	if err != nil {
@@ -71,6 +78,30 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	err = tmpl.Execute(w, data)
 	if err != nil {
 		s.errorJSON(w, fmt.Errorf("error executing template: %w", err), http.StatusInternalServerError)
+	}
+}
+
+func (s *Server) renderBlock(w http.ResponseWriter, block string, data map[string]any) {
+	funcMap := template.FuncMap{
+		"safeHTML": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	}
+
+	partials, err := filepath.Glob("web/templates/partials/*.html")
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.New("partials").Funcs(funcMap).ParseFiles(partials...)
+	if err != nil {
+		s.errorJSON(w, fmt.Errorf("error parsing template: %w", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.ExecuteTemplate(w, block, data); err != nil {
+		s.errorJSON(w, fmt.Errorf("error executing template block: %w", err), http.StatusInternalServerError)
 	}
 }
 

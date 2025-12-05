@@ -2,8 +2,19 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/gorilla/schema"
 )
+
+var decoder *schema.Decoder
+
+func init() {
+	decoder = schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	decoder.SetAliasTag("form")
+}
 
 type jsonResponse struct {
 	Error   bool   `json:"error"`
@@ -27,6 +38,18 @@ func (s *Server) readJSON(w http.ResponseWriter, r *http.Request, data any) erro
 	err := dec.Decode(data)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *Server) decodeForm(r *http.Request, dst any) error {
+	if err := r.ParseForm(); err != nil {
+		return err
+	}
+
+	if err := decoder.Decode(dst, r.Form); err != nil {
+		return errors.New("error parsing form data")
 	}
 
 	return nil

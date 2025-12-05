@@ -1,7 +1,7 @@
 package server
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,19 +10,42 @@ import (
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email    string `json:"email" validate:"required,email"`
-		Username string `json:"username" validate:"required,min=3,max=30"`
-		Password string `json:"password" validate:"required,strongpassword"`
-		Name     string `json:"name"`
+		Name            string `form:"name" validate:"required,min=3,max=50"`
+		Username        string `form:"username" validate:"required,min=3,max=30"`
+		Email           string `form:"email" validate:"required,email"`
+		Password        string `form:"password" validate:"required,strongpassword"`
+		ConfirmPassword string `form:"confirm_password" validate:"required,eqfield=Password"`
 	}
 
-	if err := s.readJSON(w, r, &input); err != nil {
+	if err := s.decodeForm(r, &input); err != nil {
 		s.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
+	locale := r.Context().Value(localeKey).(string)
+
 	if err := s.validateStruct(input); err != nil {
-		s.writeJSON(w, http.StatusBadRequest, s.formatValidationErrors(err))
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
+		validationErrors := s.formatValidationErrors(err)
+		var message string
+		if errors, ok := validationErrors["errors"].(map[string]map[string]string); ok {
+			for _, errData := range errors {
+				fieldName := s.i18n.Translate(locale, fmt.Sprintf("field.%s", errData["field"]))
+				message = s.i18n.Translate(locale, errData["key"], map[string]any{
+					"Field": fieldName,
+					"Param": errData["param"],
+				})
+				break
+			}
+		} else {
+			message = s.i18n.Translate(locale, "validation.failed")
+		}
+
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": message,
+		})
 		return
 	}
 
@@ -40,11 +63,16 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.store.Users.Create(r.Context(), user); err != nil {
-		s.errorJSON(w, err, http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": s.i18n.Translate(locale, "register.error.email_taken"),
+		})
 		return
 	}
 
-	sessionID, err := s.cache.CreateSession(r.Context(), user.ID, 7*24*time.Hour)
+	sessionDuration := time.Duration(s.cfg.SessionDurationHours) * time.Hour
+	sessionID, err := s.session.CreateSession(r.Context(), user.ID, sessionDuration)
 	if err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -54,40 +82,61 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60,
+		MaxAge:   s.cfg.SessionDurationHours * 60 * 60,
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	s.writeJSON(w, http.StatusCreated, map[string]any{
-		"username": user.Username,
-	})
+	w.Header().Set("HX-Redirect", fmt.Sprintf("/%s/dashboard", locale))
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Identifier string `json:"identifier" validate:"required"`
-		Password   string `json:"password" validate:"required"`
+		Email    string `form:"email" validate:"required"`
+		Password string `form:"password" validate:"required"`
 	}
 
-	if err := s.readJSON(w, r, &input); err != nil {
+	if err := s.decodeForm(r, &input); err != nil {
 		s.errorJSON(w, err, http.StatusBadRequest)
 		return
 	}
 
+	locale := r.Context().Value(localeKey).(string)
+
 	if err := s.validateStruct(input); err != nil {
-		s.writeJSON(w, http.StatusBadRequest, s.formatValidationErrors(err))
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
+		validationErrors := s.formatValidationErrors(err)
+		var message string
+		if errors, ok := validationErrors["errors"].(map[string]map[string]string); ok {
+			for _, errData := range errors {
+				fieldName := s.i18n.Translate(locale, fmt.Sprintf("field.%s", errData["field"]))
+				message = s.i18n.Translate(locale, errData["key"], map[string]any{
+					"Field": fieldName,
+					"Param": errData["param"],
+				})
+				break
+			}
+		} else {
+			message = s.i18n.Translate(locale, "validation.failed")
+		}
+
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": message,
+		})
 		return
 	}
 
-	user, err := s.store.Users.GetByEmailOrUsername(r.Context(), input.Identifier)
-	if err != nil {
-		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
-		return
-	}
-	if user == nil {
-		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+	user, err := s.store.Users.GetByEmailOrUsername(r.Context(), input.Email)
+	if err != nil || user == nil {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": s.i18n.Translate(locale, "login.error.invalid_credentials"),
+		})
 		return
 	}
 
@@ -97,11 +146,16 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !match {
-		s.errorJSON(w, errors.New("invalid credentials"), http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		s.renderBlock(w, "alert-error", map[string]any{
+			"Message": s.i18n.Translate(locale, "login.error.invalid_credentials"),
+		})
 		return
 	}
 
-	sessionID, err := s.cache.CreateSession(r.Context(), user.ID, 7*24*time.Hour)
+	sessionDuration := time.Duration(s.cfg.SessionDurationHours) * time.Hour
+	sessionID, err := s.session.CreateSession(r.Context(), user.ID, sessionDuration)
 	if err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
@@ -111,13 +165,12 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
-		MaxAge:   7 * 24 * 60 * 60,
+		MaxAge:   s.cfg.SessionDurationHours * 60 * 60,
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	s.writeJSON(w, http.StatusOK, map[string]any{
-		"username": user.Username,
-	})
+	w.Header().Set("HX-Redirect", fmt.Sprintf("/%s/dashboard", locale))
+	w.WriteHeader(http.StatusOK)
 }

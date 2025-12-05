@@ -17,7 +17,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := s.cache.GetSession(r.Context(), cookie.Value)
+		userID, err := s.session.GetSession(r.Context(), cookie.Value)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

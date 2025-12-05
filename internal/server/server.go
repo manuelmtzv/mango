@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/manuelmtzv/mangocatnotes-api/internal/cache"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/config"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/i18n"
+	"github.com/manuelmtzv/mangocatnotes-api/internal/session"
 	"github.com/manuelmtzv/mangocatnotes-api/internal/store"
 )
 
@@ -15,16 +15,16 @@ type Server struct {
 	cfg          *config.Config
 	i18n         *i18n.Manager
 	store        *store.Storage
-	cache        *cache.Cache
+	session      *session.SessionManager
 	AssetVersion string
 }
 
-func New(cfg *config.Config, store *store.Storage, cache *cache.Cache) *Server {
+func New(cfg *config.Config, store *store.Storage, session *session.SessionManager) *Server {
 	return &Server{
 		cfg:          cfg,
 		i18n:         i18n.NewManager(),
 		store:        store,
-		cache:        cache,
+		session:      session,
 		AssetVersion: fmt.Sprintf("%d", time.Now().Unix()),
 	}
 }

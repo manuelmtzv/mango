@@ -82,11 +82,17 @@ func (m *Manager) Localizer(lang string) *i18n.Localizer {
 	return i18n.NewLocalizer(m.bundle, lang)
 }
 
-func (m *Manager) Translate(lang, key string) string {
+func (m *Manager) Translate(lang, key string, templateData ...map[string]any) string {
 	localizer := m.Localizer(lang)
-	msg, err := localizer.Localize(&i18n.LocalizeConfig{
+	config := &i18n.LocalizeConfig{
 		MessageID: key,
-	})
+	}
+
+	if len(templateData) > 0 {
+		config.TemplateData = templateData[0]
+	}
+
+	msg, err := localizer.Localize(config)
 	if err != nil {
 		return key
 	}
