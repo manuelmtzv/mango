@@ -59,6 +59,7 @@
   "nav.register": "Registrarse",
   "nav.dashboard": "Panel",
   "nav.logout": "Cerrar Sesión",
+  "nav.menu": "Menú",
   "footer.copyright": "Mango. Todos los derechos reservados.",
   "footer.about": "Acerca de",
   "footer.contact": "Contacto",
@@ -78,6 +79,12 @@
   "notes.title_placeholder": "Título de la nota",
   "notes.content": "Contenido",
   "notes.content_placeholder": "Escribe algo...",
+  "notes.tags": "Etiquetas",
+  "notes.tags_placeholder": "Escribe para buscar o agregar...",
+  "notes.create_tag": "Crear etiqueta",
   "common.cancel": "Cancelar",
-  "common.save": "Guardar"
+  "common.save": "Guardar",
+  "common.update": "Actualizar",
+  "notes.edit": "Editar Nota",
+  "notes.delete_confirm": "¿Estás seguro de que deseas eliminar esta nota?"
 }

@@ -98,6 +98,12 @@ func (s *PostgresNoteStore) DetachTag(ctx context.Context, noteID uuid.UUID, tag
 	return tx.Commit(ctx)
 }
 
+func (s *PostgresNoteStore) ClearTags(ctx context.Context, noteID uuid.UUID) error {
+	query := `DELETE FROM note_tags WHERE note_id = $1`
+	_, err := s.pool.Exec(ctx, query, noteID)
+	return err
+}
+
 func (s *PostgresNoteStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Note, error) {
 	query := `
 		SELECT id, user_id, title, content, archived, created_at, updated_at

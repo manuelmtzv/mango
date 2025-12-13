@@ -67,6 +67,7 @@ func (s *Server) routes() http.Handler {
 			r.Get("/new", s.createNotePage)
 			r.Post("/", s.createNote)
 			r.Get("/{id}", s.getNote)
+			r.Get("/{id}/edit", s.editNotePage)
 			r.Patch("/{id}", s.updateNote)
 			r.Delete("/{id}", s.deleteNote)
 

@@ -25,6 +25,7 @@ type NoteStorage interface {
 	Delete(ctx context.Context, id uuid.UUID) error
 	AttachTags(ctx context.Context, noteID uuid.UUID, tagIDs []uuid.UUID) error
 	DetachTag(ctx context.Context, noteID uuid.UUID, tagID uuid.UUID) error
+	ClearTags(ctx context.Context, noteID uuid.UUID) error
 	GetTags(ctx context.Context, noteID uuid.UUID) ([]models.Tag, error)
 }
 

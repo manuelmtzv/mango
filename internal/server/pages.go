@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -30,6 +31,23 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 		},
 		"sub": func(a, b int64) int64 {
 			return a - b
+		},
+		"dict": func(values ...any) map[string]any {
+			if len(values)%2 != 0 {
+				return nil
+			}
+			dict := make(map[string]any)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if ok {
+					dict[key] = values[i+1]
+				}
+			}
+			return dict
+		},
+		"toJSON": func(v any) template.JS {
+			b, _ := json.Marshal(v)
+			return template.JS(b)
 		},
 	}
 
@@ -64,6 +82,14 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["Lang"] = locale
 	data["t"] = t
 	data["Locales"] = s.i18n.GetLocales()
+
+	isAuthenticated := false
+	if cookie, err := r.Cookie("session_id"); err == nil {
+		if _, err := s.session.GetSession(r.Context(), cookie.Value); err == nil {
+			isAuthenticated = true
+		}
+	}
+	data["IsAuthenticated"] = isAuthenticated
 
 	if title, ok := data["Title"].(string); ok {
 		data["Title"] = s.i18n.Translate(locale, title)
@@ -102,6 +128,10 @@ func (s *Server) renderBlock(w http.ResponseWriter, r *http.Request, block strin
 			return template.HTML(s)
 		},
 		"t": t,
+		"toJSON": func(v any) template.JS {
+			b, _ := json.Marshal(v)
+			return template.JS(b)
+		},
 	}
 
 	partials, err := filepath.Glob("web/templates/partials/*.html")

@@ -59,6 +59,7 @@
   "nav.register": "Register",
   "nav.dashboard": "Dashboard",
   "nav.logout": "Logout",
+  "nav.menu": "Menu",
   "footer.copyright": "Mango. All rights reserved.",
   "footer.about": "About",
   "footer.contact": "Contact",
@@ -78,6 +79,12 @@
   "notes.title_placeholder": "Note title",
   "notes.content": "Content",
   "notes.content_placeholder": "Write something...",
+  "notes.tags": "Tags",
+  "notes.tags_placeholder": "Type to search or add tags...",
+  "notes.create_tag": "Create tag",
   "common.cancel": "Cancel",
-  "common.save": "Save"
+  "common.save": "Save",
+  "common.update": "Update",
+  "notes.edit": "Edit Note",
+  "notes.delete_confirm": "Are you sure you want to delete this note?"
 }

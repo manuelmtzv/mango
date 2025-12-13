@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -13,12 +14,60 @@ import (
 )
 
 func (s *Server) createNotePage(w http.ResponseWriter, r *http.Request) {
-	s.renderBlock(w, r, "create_note_modal", nil)
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
+
+	userTags, _, err := s.store.Tags.GetAll(r.Context(), userID, 1, 1000)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.renderBlock(w, r, "create_note_modal", map[string]any{
+		"AvailableTags": userTags,
+	})
+}
+
+func (s *Server) editNotePage(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	if note == nil {
+		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	noteTags, err := s.store.Notes.GetTags(r.Context(), note.ID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	note.Tags = noteTags
+
+	userTags, _, err := s.store.Tags.GetAll(r.Context(), note.UserID, 1, 1000)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	s.renderBlock(w, r, "edit_note_modal", map[string]any{
+		"Note":          note,
+		"AvailableTags": userTags,
+	})
 }
 
 func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	var input models.Note
+	var tagNames []string
 
 	contentType := r.Header.Get("Content-Type")
 	if strings.Contains(contentType, "application/json") {
@@ -33,12 +82,38 @@ func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
 		}
 		input.Title = r.FormValue("title")
 		input.Content = r.FormValue("content")
+
+		tagsJSON := r.FormValue("tags")
+		if tagsJSON != "" && tagsJSON != "[]" {
+			if err := json.Unmarshal([]byte(tagsJSON), &tagNames); err != nil {
+				s.errorJSON(w, err, http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
 	input.UserID = userID
 	if err := s.store.Notes.Create(r.Context(), &input); err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
+	}
+
+	if len(tagNames) > 0 {
+		createdTags, err := s.store.Tags.FindOrCreate(r.Context(), userID, tagNames)
+		if err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		var tagIDs []uuid.UUID
+		for _, tag := range createdTags {
+			tagIDs = append(tagIDs, tag.ID)
+		}
+
+		if err := s.store.Notes.AttachTags(r.Context(), input.ID, tagIDs); err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	tags, err := s.store.Notes.GetTags(r.Context(), input.ID)
@@ -51,8 +126,6 @@ func (s *Server) createNote(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") != "" {
 		w.Header().Set("Content-Type", "text/html")
 		w.Header().Set("HX-Trigger", "note-created")
-		// We need to convert struct to map for renderBlock because it expects map[string]any
-		// TODO: Refactor renderBlock to accept any
 		data := map[string]any{
 			"Title":     input.Title,
 			"Content":   input.Content,
@@ -149,10 +222,40 @@ func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input models.Note
-	if err := s.readJSON(w, r, &input); err != nil {
-		s.errorJSON(w, err, http.StatusBadRequest)
+	note, err := s.store.Notes.GetByID(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
+	}
+	if note == nil {
+		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	var input models.Note
+	var tagNames []string
+
+	contentType := r.Header.Get("Content-Type")
+	if strings.Contains(contentType, "application/json") {
+		if err := s.readJSON(w, r, &input); err != nil {
+			s.errorJSON(w, err, http.StatusBadRequest)
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			s.errorJSON(w, err, http.StatusBadRequest)
+			return
+		}
+		input.Title = r.FormValue("title")
+		input.Content = r.FormValue("content")
+
+		tagsJSON := r.FormValue("tags")
+		if tagsJSON != "" && tagsJSON != "[]" {
+			if err := json.Unmarshal([]byte(tagsJSON), &tagNames); err != nil {
+				s.errorJSON(w, err, http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
 	input.ID = id
@@ -161,14 +264,57 @@ func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tags, err := s.store.Notes.GetTags(r.Context(), input.ID)
+	if err := s.store.Notes.ClearTags(r.Context(), id); err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if len(tagNames) > 0 {
+		createdTags, err := s.store.Tags.FindOrCreate(r.Context(), note.UserID, tagNames)
+		if err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		var tagIDs []uuid.UUID
+		for _, tag := range createdTags {
+			tagIDs = append(tagIDs, tag.ID)
+		}
+
+		if err := s.store.Notes.AttachTags(r.Context(), id, tagIDs); err != nil {
+			s.errorJSON(w, err, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	updatedNote, err := s.store.Notes.GetByID(r.Context(), id)
 	if err != nil {
 		s.errorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
-	input.Tags = tags
 
-	s.writeJSON(w, http.StatusOK, input)
+	tags, err := s.store.Notes.GetTags(r.Context(), updatedNote.ID)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	updatedNote.Tags = tags
+
+	if r.Header.Get("HX-Request") != "" {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("HX-Trigger", "note-updated")
+		data := map[string]any{
+			"Title":     updatedNote.Title,
+			"Content":   updatedNote.Content,
+			"ID":        updatedNote.ID,
+			"UpdatedAt": updatedNote.UpdatedAt,
+			"Tags":      updatedNote.Tags,
+		}
+		s.renderBlock(w, r, "note-card", data)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, updatedNote)
 }
 
 func (s *Server) deleteNote(w http.ResponseWriter, r *http.Request) {

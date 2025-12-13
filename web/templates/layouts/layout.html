@@ -58,5 +58,8 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     lucide.createIcons();
+    document.body.addEventListener('htmx:afterSwap', function() {
+      lucide.createIcons();
+    });
   </script>
 </html>
