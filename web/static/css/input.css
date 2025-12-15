@@ -1,13 +1,76 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ffc50f;
-  --color-dark-700: #1c1c1c;
-  --color-dark-800: #0c0c0c;
-  --color-dark-900: #0c0c0c;
-  --color-border: #272727;
-  --color-muted: #dde6ed;
-  --color-muted-foreground: #dde6ed;
+  --color-mango-50: #fefaf5;
+  --color-mango-100: #fdf3e6;
+  --color-mango-200: #fae5c8;
+  --color-mango-300: #f5d19f;
+  --color-mango-400: #efb86f;
+  --color-mango-500: #e89f4a;
+  --color-mango-600: #dc9d66;
+  --color-mango-700: #875f3b;
+  --color-mango-800: #6d4929;
+  --color-mango-900: #5a3c22;
+  --color-mango-950: #3a2615;
+
+  --color-caramel-50: #faf6f2;
+  --color-caramel-100: #f3e9df;
+  --color-caramel-200: #e6d1bc;
+  --color-caramel-300: #d5b392;
+  --color-caramel-400: #c19066;
+  --color-caramel-500: #755b3d;
+  --color-caramel-600: #634d33;
+  --color-caramel-700: #513f2b;
+  --color-caramel-800: #423325;
+  --color-caramel-900: #372a1f;
+  --color-caramel-950: #1e1610;
+
+  --color-cocoa-50: #f8f5f2;
+  --color-cocoa-100: #efe8e1;
+  --color-cocoa-200: #ded0c3;
+  --color-cocoa-300: #c9b19d;
+  --color-cocoa-400: #b08d73;
+  --color-cocoa-500: #6c4c33;
+  --color-cocoa-600: #5b402c;
+  --color-cocoa-700: #4a3424;
+  --color-cocoa-800: #3d2b1e;
+  --color-cocoa-900: #332419;
+  --color-cocoa-950: #1c130d;
+
+  --color-cream-50: #fdfcfb;
+  --color-cream-100: #f8f6f4;
+  --color-cream-200: #beb8b5;
+  --color-cream-300: #a8a19d;
+  --color-cream-400: #918985;
+  --color-cream-500: #7a726d;
+  --color-cream-600: #645d59;
+  --color-cream-700: #4f4a47;
+  --color-cream-800: #3b3735;
+  --color-cream-900: #282624;
+  --color-cream-950: #151413;
+
+  --color-stone-50: #f7f7f8;
+  --color-stone-100: #eeeff0;
+  --color-stone-200: #a2a5ac;
+  --color-stone-300: #8a8d95;
+  --color-stone-400: #72757d;
+  --color-stone-500: #5b5e66;
+  --color-stone-600: #4a4c53;
+  --color-stone-700: #3a3c41;
+  --color-stone-800: #2b2c30;
+  --color-stone-900: #1c1d20;
+  --color-stone-950: #0e0f10;
+
+  --color-primary: #e89f4a;
+  --color-primary-light: #efb86f;
+  --color-primary-dark: #dc9d66;
+  
+  --color-dark-700: #1c1d20;
+  --color-dark-800: #0e0f10;
+  --color-dark-900: #0a0a0b;
+  --color-border: #3a3c41;
+  --color-muted: #beb8b5;
+  --color-muted-foreground: #a2a5ac;
 
   --font-sans: "Work Sans", "sans-serif";
   --font-serif: "Merriweather", "serif";
