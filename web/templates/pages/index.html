@@ -19,13 +19,20 @@
       </p>
 
       <a
-        href="{{.BaseURL}}/{{.Lang}}/register"
+        href="{{.BaseURL}}/{{.Lang}}/{{if .IsAuthenticated}}dashboard{{else}}register{{end}}"
         class="primary-button w-fit px-6 py-2 font-bold"
-        >{{t "index.hero.cta"}}</a
+        >{{if .IsAuthenticated}}{{t "index.hero.cta_authenticated"}}{{else}}{{t "index.hero.cta"}}{{end}}</a
       >
     </div>
 
-    <div class="flex-1"></div>
+    <div class="flex-1 flex items-center justify-center">
+      <div class="relative">
+        <div class="absolute inset-0 bg-linear-to-br from-mango-400 via-mango-500 to-caramel-500 rounded-full blur-3xl opacity-30 scale-110"></div>
+        <div class="relative w-64 h-64 lg:w-80 lg:h-80 bg-linear-to-br from-mango-400 via-mango-500 to-caramel-600 rounded-full flex items-center justify-center shadow-2xl">
+          <img src="/static/svg/mango.svg" alt="Mango Cat" class="w-48 h-48 lg:w-60 lg:h-60 drop-shadow-lg" style="filter: brightness(0) invert(1);" />
+        </div>
+      </div>
+    </div>
   </section>
 
   {{ template "features" . }}

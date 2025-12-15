@@ -5,6 +5,7 @@
   "index.hero.description_line1": "Mango es una aplicación web gratuita para la gestión de notas. Te permite crear y administrar tus notas desde cualquier dispositivo con un navegador web.",
   "index.hero.description_line2": "¡Regístrate ahora para comenzar a organizar tus notas. Accede a ellas desde cualquier lugar! 🐱🥭",
   "index.hero.cta": "¡Comienza a crear notas!",
+  "index.hero.cta_authenticated": "Ir al panel",
   "login.title": "Iniciar Sesión",
   "login.heading": "Bienvenido de nuevo",
   "login.subheading": "Ingresa tus credenciales para acceder a tu cuenta",

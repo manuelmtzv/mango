@@ -42,8 +42,8 @@ func (s *Server) routes() http.Handler {
 		r.Use(s.localeMiddleware)
 
 		r.Get("/", s.home)
-		r.Get("/login", s.loginPage)
-		r.Get("/register", s.registerPage)
+		r.With(s.GuestMiddleware).Get("/login", s.loginPage)
+		r.With(s.GuestMiddleware).Get("/register", s.registerPage)
 
 		r.Group(func(r chi.Router) {
 			r.Use(s.AuthMiddleware)

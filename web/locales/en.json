@@ -5,6 +5,7 @@
   "index.hero.description_line1": "Mango is a free note management web app. It allows you to create and manage your notes from any device with a web browser.",
   "index.hero.description_line2": "Sign up now to start organizing your notes. Access them from anywhere! 🐱🥭",
   "index.hero.cta": "Start creating notes!",
+  "index.hero.cta_authenticated": "Go to dashboard",
   "login.title": "Login",
   "login.heading": "Welcome back",
   "login.subheading": "Enter your credentials to access your account",

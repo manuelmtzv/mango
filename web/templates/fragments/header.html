@@ -1,62 +1,62 @@
 {{ define "header" }}
-<header
-  class="py-4 backdrop-blur-md sticky top-0 left-0 right-0 z-50 bg-dark-700/40 border-b border-border"
-  x-data="{ mobileMenuOpen: false }"
->
-  <div class="flex items-center justify-between container mx-auto gap-4 px-4">
-    <a
-      href="{{.BaseURL}}/{{.Lang}}"
-      class="flex items-center font-serif text-2xl font-bold"
-    >
-      Mango
-    </a>
+<div x-data="{ mobileMenuOpen: false }">
+  <header
+    class="py-4 backdrop-blur-md sticky top-0 left-0 right-0 z-50 bg-dark-700/40 border-b border-border"
+  >
+    <div class="flex items-center justify-between container mx-auto gap-4 px-4">
+      <a
+        href="{{.BaseURL}}/{{.Lang}}"
+        class="flex items-center gap-2 font-serif text-2xl font-bold"
+      >
+        <img src="/static/svg/mango-primary.svg" class="w-8 h-8" />
+        Mango
+      </a>
 
-    <nav class="hidden md:block">
-      <ul class="flex gap-4 items-center">
-        {{ if .IsAuthenticated }}
-        <li>
-          <a
-            href="{{.BaseURL}}/{{.Lang}}/dashboard"
-            class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
-            >{{t "nav.dashboard"}}</a
-          >
-        </li>
-        <li>
-          <button
-            hx-post="{{.BaseURL}}/{{.Lang}}/auth/logout"
-            hx-swap="none"
-            hx-on::after-request="window.location.href='{{.BaseURL}}/{{.Lang}}'"
-            class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
-          >{{t "nav.logout"}}</button>
-        </li>
-        {{ else }}
-        <li>
-          <a
-            href="{{.BaseURL}}/{{.Lang}}/login"
-            class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
-            >{{t "nav.login"}}</a
-          >
-        </li>
-        <li>
-          <a href="{{.BaseURL}}/{{.Lang}}/register" class="primary-button"
-            >{{t "nav.register"}}</a
-          >
-        </li>
-        {{ end }}
-      </ul>
-    </nav>
+      <nav class="hidden md:block">
+        <ul class="flex gap-4 items-center">
+          {{ if .IsAuthenticated }}
+          <li>
+            <a
+              href="{{.BaseURL}}/{{.Lang}}/dashboard"
+              class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
+              >{{t "nav.dashboard"}}</a
+            >
+          </li>
+          <li>
+            <button
+              hx-post="{{.BaseURL}}/{{.Lang}}/auth/logout"
+              hx-swap="none"
+              hx-on::after-request="window.location.href='{{.BaseURL}}/{{.Lang}}'"
+              class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
+            >{{t "nav.logout"}}</button>
+          </li>
+          {{ else }}
+          <li>
+            <a
+              href="{{.BaseURL}}/{{.Lang}}/login"
+              class="text-gray-300 hover:text-gray-200 transition duration-300 ease-in-out font-medium hover:underline"
+              >{{t "nav.login"}}</a
+            >
+          </li>
+          <li>
+            <a href="{{.BaseURL}}/{{.Lang}}/register" class="primary-button"
+              >{{t "nav.register"}}</a
+            >
+          </li>
+          {{ end }}
+        </ul>
+      </nav>
 
-    <button
-      class="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
-      @click="mobileMenuOpen = true"
-      aria-label="Open menu"
-    >
-      <i data-lucide="menu" class="w-6 h-6"></i>
-    </button>
-  </div>
+      <button
+        class="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+        @click="mobileMenuOpen = true"
+        aria-label="Open menu"
+      >
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+    </div>
+  </header>
 
   {{ template "mobile_menu" . }}
-</header>
+</div>
 {{ end }}
-
-

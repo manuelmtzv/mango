@@ -33,3 +33,26 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+func (s *Server) GuestMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		locale := r.Context().Value(localeKey)
+		if locale == nil {
+			locale = "es"
+		}
+
+		cookie, err := r.Cookie("session_id")
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		_, err = s.session.GetSession(r.Context(), cookie.Value)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("/%s/dashboard", locale), http.StatusFound)
+	})
+}
