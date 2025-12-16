@@ -28,11 +28,11 @@ func main() {
 	}
 	defer database.Close()
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
-		DB:       0,
-	})
+	redisOpts, err := redis.ParseURL(cfg.RedisAddr)
+	if err != nil {
+		logger.Fatalw("Failed to parse Redis URL", "error", err)
+	}
+	redisClient := redis.NewClient(redisOpts)
 
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		logger.Fatalw("Failed to connect to Redis", "error", err)
