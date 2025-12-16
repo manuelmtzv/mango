@@ -1,0 +1,40 @@
+{{ define "content" }}
+<div class="container mx-auto">
+  <section
+    class="flex flex-col gap-4 py-20 lg:py-32 md:flex-row md:items-center"
+  >
+    <div class="flex flex-col gap-6 flex-1">
+      <h2
+        class="font-serif font-bold text-5xl lg:text-6xl leading-tight text-balance text-foreground"
+      >
+        {{t "index.hero.heading"}}
+      </h2>
+
+      <p class="text-lg text-muted-foreground leading-relaxed">
+        {{t "index.hero.description_line1"}}
+      </p>
+
+      <p class="text-lg text-muted-foreground leading-relaxed">
+        {{t "index.hero.description_line2"}}
+      </p>
+
+      <a
+        href="{{.BaseURL}}/{{.Lang}}/{{if .IsAuthenticated}}dashboard{{else}}register{{end}}"
+        class="primary-button w-fit px-6 py-2 font-bold"
+        >{{if .IsAuthenticated}}{{t "index.hero.cta_authenticated"}}{{else}}{{t "index.hero.cta"}}{{end}}</a
+      >
+    </div>
+
+    <div class="flex-1 flex items-center justify-center">
+      <div class="relative">
+        <div class="absolute inset-0 bg-linear-to-br from-mango-400 via-mango-500 to-caramel-500 rounded-full blur-3xl opacity-30 scale-110"></div>
+        <div class="relative w-64 h-64 lg:w-80 lg:h-80 bg-linear-to-br from-mango-400 via-mango-500 to-caramel-600 rounded-full flex items-center justify-center shadow-2xl">
+          <img src="/static/svg/mango.svg" alt="Mango Cat" class="w-48 h-48 lg:w-60 lg:h-60 drop-shadow-lg" style="filter: brightness(0) invert(1);" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{ template "features" . }}
+</div>
+{{ end }}

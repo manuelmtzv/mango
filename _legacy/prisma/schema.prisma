@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  username  String   @unique
+  hash      String
+  notes     Note[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name String?
+  Tag  Tag[]
+
+  @@unique([email, username])
+  @@map("users")
+}
+
+model Note {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  archived  Boolean  @default(false)
+  userId    String   @db.ObjectId
+  User      User     @relation(fields: [userId], references: [id])
+  tagIDs    String[] @db.ObjectId
+  tags      Tag[]    @relation(fields: [tagIDs], references: [id])
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  title String? @default("")
+
+  @@map("notes")
+}
+
+model Tag {
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  color String? @default("#fff")
+
+  User      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  noteIDs   String[] @db.ObjectId
+  notes     Note[]   @relation(fields: [noteIDs], references: [id])
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("tags")
+}
