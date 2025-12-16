@@ -15,6 +15,8 @@ type Config struct {
 	DefaultTagLimit      int64
 	BaseURL              string
 	SessionDurationHours int
+	IsProd               bool
+	AllowedOrigins       []string
 }
 
 func LoadConfig() *Config {
@@ -31,5 +33,7 @@ func LoadConfig() *Config {
 		DefaultTagLimit:      env.GetInt64("DEFAULT_TAG_LIMIT", 100),
 		BaseURL:              env.GetString("BASE_URL", "http://localhost:8080"),
 		SessionDurationHours: env.GetInt("SESSION_DURATION_HOURS", 168),
+		IsProd:               env.GetBool("IS_PROD", false),
+		AllowedOrigins:       env.GetSlice("ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
 	}
 }

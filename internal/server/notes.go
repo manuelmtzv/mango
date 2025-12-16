@@ -28,6 +28,7 @@ func (s *Server) createNotePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) editNotePage(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	idParam := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
@@ -42,6 +43,11 @@ func (s *Server) editNotePage(w http.ResponseWriter, r *http.Request) {
 	}
 	if note == nil {
 		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	if note.UserID != userID {
+		s.errorJSON(w, errors.New("forbidden"), http.StatusForbidden)
 		return
 	}
 
@@ -187,6 +193,7 @@ func (s *Server) getNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	idParam := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
@@ -201,6 +208,11 @@ func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
 	}
 	if note == nil {
 		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	if note.UserID != userID {
+		s.errorJSON(w, errors.New("forbidden"), http.StatusForbidden)
 		return
 	}
 
@@ -215,6 +227,7 @@ func (s *Server) getNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	idParam := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
@@ -229,6 +242,11 @@ func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
 	}
 	if note == nil {
 		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	if note.UserID != userID {
+		s.errorJSON(w, errors.New("forbidden"), http.StatusForbidden)
 		return
 	}
 
@@ -318,10 +336,26 @@ func (s *Server) updateNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteNote(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(UserIDKey).(uuid.UUID)
 	idParam := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		s.errorJSON(w, errors.New("invalid id"), http.StatusBadRequest)
+		return
+	}
+
+	note, err := s.store.Notes.GetByID(r.Context(), id)
+	if err != nil {
+		s.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	if note == nil {
+		s.errorJSON(w, errors.New("note not found"), http.StatusNotFound)
+		return
+	}
+
+	if note.UserID != userID {
+		s.errorJSON(w, errors.New("forbidden"), http.StatusForbidden)
 		return
 	}
 

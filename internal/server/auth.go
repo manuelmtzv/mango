@@ -115,7 +115,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   s.cfg.SessionDurationHours * 60 * 60,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   s.cfg.IsProd,
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -202,7 +202,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		MaxAge:   s.cfg.SessionDurationHours * 60 * 60,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   s.cfg.IsProd,
 		SameSite: http.SameSiteLaxMode,
 	})
 
