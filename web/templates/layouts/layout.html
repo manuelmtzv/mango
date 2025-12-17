@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ .Title }} - Mango</title>
     <meta name="description" content="{{.Description}}" />
+    <meta name="author" content="Manuel Martínez" />
+    <meta name="robots" content="index, follow" />
     <link rel="icon" type="image/svg+xml" href="/static/svg/mango-primary.svg" />
 
     <link rel="canonical" href="{{.BaseURL}}{{.CurrentPath}}" />
@@ -12,18 +14,27 @@
     <link
       rel="alternate"
       hreflang="{{.}}"
-      href="{{$.BaseURL}}/{{.}}{{$.CurrentPath}}"
+      href="{{$.BaseURL}}/{{.}}{{$.PathWithoutLocale}}"
     />
     {{end}}
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href="{{.BaseURL}}/es{{.PathWithoutLocale}}"
+    />
 
     <meta property="og:title" content="{{.Title}}" />
     <meta property="og:description" content="{{.Description}}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="{{.BaseURL}}{{.CurrentPath}}" />
+    <meta property="og:image" content="{{.BaseURL}}/static/svg/mango-primary.svg" />
+    <meta property="og:locale" content="{{if eq .Lang "es"}}es_MX{{else}}en_US{{end}}" />
+    <meta property="og:site_name" content="Mango Notes" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{{.Title}}" />
     <meta name="twitter:description" content="{{.Description}}" />
+    <meta name="twitter:image" content="{{.BaseURL}}/static/svg/mango-primary.svg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -43,6 +54,38 @@
         display: none !important;
       }
     </style>
+
+    {{if .GAID}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{.GAID}}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("config", "{{.GAID}}");
+    </script>
+    {{end}}
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Mango",
+      "description": "{{.Description}}",
+      "url": "{{.BaseURL}}",
+      "applicationCategory": "Productivity",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Personal notes management",
+        "Tag organization",
+        "Multi-language support"
+      ]
+    }
+    </script>
   </head>
   <body
     class="flex flex-col bg-dark-900 text-gray-100 font-sans antialiased min-h-svh"

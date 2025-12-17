@@ -17,6 +17,7 @@ type Config struct {
 	SessionDurationHours int
 	IsProd               bool
 	AllowedOrigins       []string
+	GAID                 string
 }
 
 func LoadConfig() *Config {
@@ -35,5 +36,6 @@ func LoadConfig() *Config {
 		SessionDurationHours: env.GetInt("SESSION_DURATION_HOURS", 168),
 		IsProd:               env.GetBool("IS_PROD", false),
 		AllowedOrigins:       env.GetSlice("ALLOWED_ORIGINS", []string{"http://localhost:3000"}),
+		GAID:                 env.GetString("GA_ID", ""),
 	}
 }

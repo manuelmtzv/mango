@@ -104,6 +104,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, dat
 	data["BaseURL"] = s.cfg.BaseURL
 	data["CurrentYear"] = time.Now().Year()
 	data["AssetVersion"] = s.AssetVersion
+	data["GAID"] = s.cfg.GAID
 
 	pathWithoutLocale := strings.TrimPrefix(r.URL.Path, "/"+locale)
 	if pathWithoutLocale == "" {
